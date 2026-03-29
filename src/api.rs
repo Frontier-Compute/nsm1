@@ -1057,6 +1057,19 @@ async fn stats(
 
     let network = format!("{:?}", state.config.network);
 
+    let type_names = [
+        (1, "PROGRAM_ENTRY"), (2, "OWNERSHIP_ATTEST"), (3, "CONTRACT_ANCHOR"),
+        (4, "DEPLOYMENT"), (5, "HOSTING_PAYMENT"), (6, "SHIELD_RENEWAL"),
+        (7, "TRANSFER"), (8, "EXIT"), (9, "MERKLE_ROOT"),
+        (10, "STAKING_DEPOSIT"), (11, "STAKING_WITHDRAW"), (12, "STAKING_REWARD"),
+    ];
+    let db_counts = state.db.leaf_counts_by_type().unwrap_or_default();
+    let mut type_counts = serde_json::Map::new();
+    for (id, name) in &type_names {
+        let count = db_counts.iter().find(|(t, _)| t == id).map(|(_, c)| *c).unwrap_or(0);
+        type_counts.insert(name.to_string(), serde_json::json!(count));
+    }
+
     Ok(Json(serde_json::json!({
         "total_leaves": total_leaves,
         "total_anchors": total_anchors,
@@ -1064,12 +1077,8 @@ async fn stats(
         "last_anchor_block": last_height,
         "network": network,
         "protocol": "NSM1",
-        "event_types": [
-            "PROGRAM_ENTRY", "OWNERSHIP_ATTEST", "CONTRACT_ANCHOR",
-            "DEPLOYMENT", "HOSTING_PAYMENT", "SHIELD_RENEWAL",
-            "TRANSFER", "EXIT", "MERKLE_ROOT",
-            "STAKING_DEPOSIT", "STAKING_WITHDRAW", "STAKING_REWARD"
-        ],
+        "event_types": type_names.iter().map(|(_, n)| n).collect::<Vec<_>>(),
+        "type_counts": type_counts,
     })))
 }
 

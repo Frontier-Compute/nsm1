@@ -664,6 +664,19 @@ impl Db {
         Ok(deleted > 0)
     }
 
+    pub fn leaf_counts_by_type(&self) -> Result<Vec<(i32, i64)>> {
+        let conn = self.conn()?;
+        let mut stmt = conn.prepare(
+            "SELECT event_type, COUNT(*) FROM merkle_leaves GROUP BY event_type ORDER BY event_type"
+        )?;
+        let rows = stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?;
+        let mut result = Vec::new();
+        for row in rows {
+            result.push(row?);
+        }
+        Ok(result)
+    }
+
     pub fn total_leaf_count(&self) -> Result<usize> {
         let conn = self.conn()?;
         let count: i64 = conn.query_row("SELECT COUNT(*) FROM merkle_leaves", [], |row| row.get(0))?;
