@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nordic Shield - Proof Verifier</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #06060a;
+    color: #e0e0e0;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 40px 16px;
+  }
+  .container {
+    background: #0a0a0f;
+    border: 1px solid #1a1a2e;
+    border-radius: 8px;
+    padding: 32px;
+    max-width: 760px;
+    width: 100%;
+    align-self: flex-start;
+  }
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .title { font-size: 20px; font-weight: 600; color: #fff; }
+  .protocol-tag {
+    font-size: 11px; font-weight: 600; color: #4b5563;
+    background: rgba(75,85,99,0.15); padding: 3px 8px; border-radius: 4px;
+    display: none;
+  }
+  .subtitle { font-size: 13px; color: #6b7280; margin-bottom: 24px; }
+  .input-row { display: flex; gap: 8px; margin-bottom: 24px; }
+  .hash-input {
+    flex: 1; background: #111118; border: 1px solid #1a1a2e; border-radius: 6px;
+    padding: 10px 14px; color: #fff; font-size: 13px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace; outline: none;
+  }
+  .hash-input:focus { border-color: #2a2a4e; }
+  .hash-input::placeholder { color: #4b5563; }
+  .btn {
+    background: #fff; color: #0a0a0f; border: none; border-radius: 6px;
+    padding: 10px 20px; font-size: 13px; font-weight: 600; cursor: pointer;
+    white-space: nowrap; transition: opacity 0.15s;
+  }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  .btn-outline {
+    background: transparent; color: #9ca3af; border: 1px solid #1a1a2e;
+    border-radius: 6px; padding: 8px 16px; font-size: 12px; font-weight: 500;
+    cursor: pointer; white-space: nowrap;
+  }
+  .btn-outline:hover { border-color: #2a2a4e; color: #e0e0e0; }
+  .error { font-size: 12px; color: #ef4444; margin-bottom: 16px; }
+  .loading { text-align: center; padding: 40px 0; color: #6b7280; font-size: 13px; }
+  .mono {
+    font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+    font-size: 12px; word-break: break-all; line-height: 1.6;
+  }
+
+  /* Banner */
+  .banner {
+    border-radius: 8px; padding: 16px 20px; margin-bottom: 24px;
+    display: flex; align-items: center; gap: 12px;
+    font-size: 15px; font-weight: 600;
+  }
+  .banner.ok { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); color: #22c55e; }
+  .banner.fail { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #ef4444; }
+
+  /* Card */
+  .card {
+    background: #111118; border: 1px solid #1a1a2e;
+    border-radius: 8px; padding: 24px; margin-bottom: 16px;
+  }
+  .section-title {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: #6b7280; font-weight: 600; margin-bottom: 12px;
+  }
+
+  /* Checks */
+  .check-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12px; }
+  .check-row svg { flex-shrink: 0; }
+
+  /* Info grid */
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .info-label { font-size: 10px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 500; }
+  .info-value { font-size: 13px; font-family: 'JetBrains Mono', monospace; color: #e0e0e0; }
+  .event-badge {
+    font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 4px;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    background: rgba(99,102,241,0.14); color: #818cf8; display: inline-block;
+  }
+
+  /* Path */
+  .path { display: flex; flex-direction: column; align-items: center; padding: 8px 0; }
+  .path-step { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 560px; }
+  .path-arrow { color: #374151; font-size: 14px; line-height: 1; padding: 2px 0; user-select: none; }
+  .path-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 3px; }
+  .path-node {
+    border-radius: 6px; padding: 6px 12px; font-size: 11px;
+    font-family: 'JetBrains Mono', monospace; text-align: center;
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    border: 1px solid;
+  }
+  .node-leaf { border-color: #818cf8; color: #818cf8; background: rgba(99,102,241,0.08); }
+  .node-sib { border-color: #374151; color: #9ca3af; background: rgba(55,65,81,0.15); }
+  .node-comp { border-color: #6366f1; color: #a5b4fc; background: rgba(99,102,241,0.06); }
+  .node-root-ok { border-color: #22c55e; color: #4ade80; background: rgba(34,197,94,0.08); }
+  .node-root-fail { border-color: #ef4444; color: #f87171; background: rgba(239,68,68,0.08); }
+  .pair-row { display: flex; align-items: center; gap: 6px; width: 100%; max-width: 560px; justify-content: center; }
+  .pair-plus { color: #4b5563; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+  .pair-node { flex: 1; min-width: 0; }
+
+  /* Anchor */
+  .anchor-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .anchor-link {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    color: #60a5fa; text-decoration: none; word-break: break-all;
+  }
+  .anchor-link:hover { text-decoration: underline; }
+  .anchor-block { font-size: 12px; color: #6b7280; }
+  .actions { display: flex; gap: 8px; margin-top: 8px; }
+  .root-compare { margin-top: 12px; font-size: 11px; text-align: center; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="title">Proof Verifier</div>
+    <div class="protocol-tag" id="protocolTag"></div>
+  </div>
+  <div class="subtitle">Zero-trust in-browser Merkle proof verification. No server involved.</div>
+
+  <!-- Merkle Path Diagram -->
+  <div class="card" style="margin-bottom:24px;padding:20px 24px">
+    <div class="section-title">How Verification Works</div>
+    <svg viewBox="0 0 560 260" width="100%" style="max-width:560px;display:block;margin:0 auto">
+      <!-- Root -->
+      <rect x="210" y="8" width="140" height="36" rx="6" fill="rgba(34,197,94,0.08)" stroke="#22c55e" stroke-width="1.2"/>
+      <text x="280" y="31" text-anchor="middle" fill="#4ade80" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="600">Merkle Root</text>
+
+      <!-- Arrow root to node -->
+      <line x1="250" y1="44" x2="180" y2="76" stroke="#374151" stroke-width="1"/>
+      <line x1="310" y1="44" x2="380" y2="76" stroke="#374151" stroke-width="1"/>
+
+      <!-- Node left -->
+      <rect x="100" y="76" width="160" height="36" rx="6" fill="rgba(99,102,241,0.06)" stroke="#6366f1" stroke-width="1"/>
+      <text x="180" y="99" text-anchor="middle" fill="#a5b4fc" font-family="'JetBrains Mono',monospace" font-size="10">H(child₀ ‖ child₁)</text>
+
+      <!-- Node right (sibling) -->
+      <rect x="300" y="76" width="160" height="36" rx="6" fill="rgba(55,65,81,0.15)" stroke="#374151" stroke-width="1"/>
+      <text x="380" y="93" text-anchor="middle" fill="#9ca3af" font-family="'JetBrains Mono',monospace" font-size="10">Sibling hash</text>
+      <text x="380" y="106" text-anchor="middle" fill="#6b7280" font-family="'JetBrains Mono',monospace" font-size="8">(from proof bundle)</text>
+
+      <!-- Arrow node to children -->
+      <line x1="145" y1="112" x2="100" y2="148" stroke="#374151" stroke-width="1"/>
+      <line x1="215" y1="112" x2="260" y2="148" stroke="#374151" stroke-width="1"/>
+
+      <!-- Child left (deeper node) -->
+      <rect x="20" y="148" width="160" height="36" rx="6" fill="rgba(99,102,241,0.06)" stroke="#6366f1" stroke-width="1"/>
+      <text x="100" y="171" text-anchor="middle" fill="#a5b4fc" font-family="'JetBrains Mono',monospace" font-size="10">H(leaf ‖ sibling)</text>
+
+      <!-- Child right (sibling) -->
+      <rect x="200" y="148" width="160" height="36" rx="6" fill="rgba(55,65,81,0.15)" stroke="#374151" stroke-width="1"/>
+      <text x="280" y="165" text-anchor="middle" fill="#9ca3af" font-family="'JetBrains Mono',monospace" font-size="10">Sibling hash</text>
+      <text x="280" y="178" text-anchor="middle" fill="#6b7280" font-family="'JetBrains Mono',monospace" font-size="8">(from proof bundle)</text>
+
+      <!-- Arrow to leaf -->
+      <line x1="65" y1="184" x2="65" y2="216" stroke="#818cf8" stroke-width="1"/>
+      <polygon points="65,220 60,212 70,212" fill="#818cf8"/>
+
+      <!-- Leaf -->
+      <rect x="4" y="220" width="122" height="36" rx="6" fill="rgba(99,102,241,0.08)" stroke="#818cf8" stroke-width="1.4"/>
+      <text x="65" y="243" text-anchor="middle" fill="#818cf8" font-family="'JetBrains Mono',monospace" font-size="11" font-weight="600">Your Leaf</text>
+
+      <!-- Legend -->
+      <rect x="400" y="148" width="8" height="8" rx="2" fill="rgba(99,102,241,0.08)" stroke="#818cf8" stroke-width="0.8"/>
+      <text x="414" y="156" fill="#818cf8" font-family="'JetBrains Mono',monospace" font-size="9">Computed locally</text>
+
+      <rect x="400" y="166" width="8" height="8" rx="2" fill="rgba(55,65,81,0.15)" stroke="#374151" stroke-width="0.8"/>
+      <text x="414" y="174" fill="#9ca3af" font-family="'JetBrains Mono',monospace" font-size="9">From proof bundle</text>
+
+      <rect x="400" y="184" width="8" height="8" rx="2" fill="rgba(34,197,94,0.08)" stroke="#22c55e" stroke-width="0.8"/>
+      <text x="414" y="192" fill="#4ade80" font-family="'JetBrains Mono',monospace" font-size="9">Verified root</text>
+
+      <!-- Flow annotation -->
+      <text x="280" y="254" text-anchor="middle" fill="#4b5563" font-family="Inter,system-ui,sans-serif" font-size="10">Walk from leaf → root using BLAKE2b-256 with NordicShield personalizations. Compare against on-chain anchor.</text>
+    </svg>
+  </div>
+
+  <div class="input-row">
+    <input class="hash-input" id="leafInput" type="text" placeholder="Enter leaf hash…" spellcheck="false">
+    <button class="btn" id="verifyBtn">Verify</button>
+  </div>
+
+  <div id="errorBox" class="error hidden"></div>
+  <div id="loadingBox" class="loading hidden">Fetching and verifying proof…</div>
+  <div id="resultArea" class="hidden"></div>
+</div>
+
+<script>
+// BLAKE2b-256 - Pure JS, personalization support
+const MASK64 = (1n << 64n) - 1n;
+const IV = [
+  0x6a09e667f3bcc908n, 0xbb67ae8584caa73bn,
+  0x3c6ef372fe94f82bn, 0xa54ff53a5f1d36f1n,
+  0x510e527fade682d1n, 0x9b05688c2b3e6c1fn,
+  0x1f83d9abfb41bd6bn, 0x5be0cd19137e2179n,
+];
+const SIGMA = [
+  [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],
+  [14,10,4,8,9,15,13,6,1,12,0,2,11,7,5,3],
+  [11,8,12,0,5,2,15,13,10,14,3,6,7,1,9,4],
+  [7,9,3,1,13,12,11,14,2,6,5,10,4,0,15,8],
+  [9,0,5,7,2,4,10,15,14,1,11,12,6,8,3,13],
+  [2,12,6,10,0,11,8,3,4,13,7,5,15,14,1,9],
+  [12,5,1,15,14,13,4,10,0,7,6,3,9,2,8,11],
+  [13,11,7,14,12,1,3,9,5,0,15,4,8,6,2,10],
+  [6,15,14,9,11,3,0,8,12,2,13,7,1,4,10,5],
+  [10,2,8,4,7,6,1,5,15,11,9,14,3,12,13,0],
+];
+
+function rotr64(x, n) {
+  const bn = BigInt(n);
+  return ((x >> bn) | (x << (64n - bn))) & MASK64;
+}
+function readLE64(buf, off) {
+  let v = 0n;
+  for (let i = 0; i < 8; i++) v |= BigInt(buf[off + i]) << BigInt(8 * i);
+  return v;
+}
+function writeLE64(buf, off, val) {
+  for (let i = 0; i < 8; i++) buf[off + i] = Number((val >> BigInt(8 * i)) & 0xffn);
+}
+
+function compress(h, block, t, last) {
+  const v = new Array(16);
+  for (let i = 0; i < 8; i++) { v[i] = h[i]; v[i + 8] = IV[i]; }
+  v[12] ^= t & MASK64;
+  v[13] ^= (t >> 64n) & MASK64;
+  if (last) v[14] ^= MASK64;
+  const m = new Array(16);
+  for (let i = 0; i < 16; i++) m[i] = readLE64(block, i * 8);
+  function G(a, b, c, d, x, y) {
+    v[a] = (v[a] + v[b] + x) & MASK64;
+    v[d] = rotr64(v[d] ^ v[a], 32);
+    v[c] = (v[c] + v[d]) & MASK64;
+    v[b] = rotr64(v[b] ^ v[c], 24);
+    v[a] = (v[a] + v[b] + y) & MASK64;
+    v[d] = rotr64(v[d] ^ v[a], 16);
+    v[c] = (v[c] + v[d]) & MASK64;
+    v[b] = rotr64(v[b] ^ v[c], 63);
+  }
+  for (let r = 0; r < 12; r++) {
+    const s = SIGMA[r % 10];
+    G(0,4,8,12,m[s[0]],m[s[1]]); G(1,5,9,13,m[s[2]],m[s[3]]);
+    G(2,6,10,14,m[s[4]],m[s[5]]); G(3,7,11,15,m[s[6]],m[s[7]]);
+    G(0,5,10,15,m[s[8]],m[s[9]]); G(1,6,11,12,m[s[10]],m[s[11]]);
+    G(2,7,8,13,m[s[12]],m[s[13]]); G(3,4,9,14,m[s[14]],m[s[15]]);
+  }
+  for (let i = 0; i < 8; i++) h[i] = h[i] ^ v[i] ^ v[i + 8];
+}
+
+function blake2b256(input, personalization) {
+  const p = new Uint8Array(64);
+  p[0] = 32; p[2] = 1; p[3] = 1;
+  if (personalization) for (let i = 0; i < 16; i++) p[48 + i] = personalization[i] || 0;
+  const h = new Array(8);
+  for (let i = 0; i < 8; i++) h[i] = IV[i] ^ readLE64(p, i * 8);
+  let t = 0n, off = 0;
+  if (input.length === 0) {
+    compress(h, new Uint8Array(128), 0n, true);
+  } else {
+    while (off + 128 < input.length) { t += 128n; compress(h, input.subarray(off, off + 128), t, false); off += 128; }
+    const last = new Uint8Array(128);
+    last.set(input.subarray(off));
+    t += BigInt(input.length - off);
+    compress(h, last, t, true);
+  }
+  const out = new Uint8Array(32);
+  for (let i = 0; i < 4; i++) writeLE64(out, i * 8, h[i]);
+  return out;
+}
+
+// Hex utilities
+function hexToBytes(hex) {
+  const out = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.substr(i * 2, 2), 16);
+  return out;
+}
+function bytesToHex(bytes) {
+  let h = "";
+  for (let i = 0; i < bytes.length; i++) h += bytes[i].toString(16).padStart(2, "0");
+  return h;
+}
+function truncHash(h, n) {
+  n = n || 12;
+  if (!h || h.length <= n * 2) return h || "";
+  return h.slice(0, n) + "\u2026" + h.slice(-n);
+}
+
+// Nordic Shield hashing
+const LEAF_P = new Uint8Array([0x4e,0x6f,0x72,0x64,0x69,0x63,0x53,0x68,0x69,0x65,0x6c,0x64,0x5f,0x00,0x00,0x00]);
+const NODE_P = new Uint8Array([0x4e,0x6f,0x72,0x64,0x69,0x63,0x53,0x68,0x69,0x65,0x6c,0x64,0x5f,0x4d,0x52,0x4b]);
+const ENC = new TextEncoder();
+const EVENT_PREFIX = { PROGRAM_ENTRY: 0x01, OWNERSHIP_ATTEST: 0x02 };
+
+function computeLeafHash(eventType, walletHash, serial) {
+  const prefix = EVENT_PREFIX[eventType];
+  if (prefix === undefined) return null;
+  if (eventType === "PROGRAM_ENTRY") {
+    const wb = ENC.encode(walletHash);
+    const inp = new Uint8Array(1 + wb.length);
+    inp[0] = prefix; inp.set(wb, 1);
+    return blake2b256(inp, LEAF_P);
+  }
+  if (eventType === "OWNERSHIP_ATTEST") {
+    const wb = ENC.encode(walletHash);
+    const sb = ENC.encode(serial || "");
+    const inp = new Uint8Array(1 + 2 + wb.length + 2 + sb.length);
+    let o = 0;
+    inp[o++] = prefix;
+    inp[o++] = (wb.length >> 8) & 0xff; inp[o++] = wb.length & 0xff;
+    inp.set(wb, o); o += wb.length;
+    inp[o++] = (sb.length >> 8) & 0xff; inp[o++] = sb.length & 0xff;
+    inp.set(sb, o);
+    return blake2b256(inp, LEAF_P);
+  }
+  return null;
+}
+
+function nodeHash(left, right) {
+  const inp = new Uint8Array(64);
+  inp.set(left, 0); inp.set(right, 32);
+  return blake2b256(inp, NODE_P);
+}
+
+function walkProof(leafHex, proof) {
+  let cur = hexToBytes(leafHex);
+  const steps = [];
+  for (const step of proof) {
+    const sib = hexToBytes(step.hash);
+    let l, r;
+    if (step.position === "right") { l = cur; r = sib; } else { l = sib; r = cur; }
+    cur = nodeHash(l, r);
+    steps.push({ left: bytesToHex(l), right: bytesToHex(r), result: bytesToHex(cur) });
+  }
+  return { computedRoot: bytesToHex(cur), steps: steps };
+}
+
+// SVG helpers
+function svgCheck(ok) {
+  if (ok) return '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#22c55e" stroke-width="1.5"/><path d="M5 8l2 2 4-4" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  return '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#ef4444" stroke-width="1.5"/><path d="M5.5 5.5l5 5M10.5 5.5l-5 5" stroke="#ef4444" stroke-width="1.5" stroke-linecap="round"/></svg>';
+}
+function svgSkip() {
+  return '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#6b7280" stroke-width="1.5"/><path d="M5 8h6" stroke="#6b7280" stroke-width="1.5" stroke-linecap="round"/></svg>';
+}
+function svgBannerOk() {
+  return '<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="10" stroke="currentColor" stroke-width="2"/><path d="M6 11l3 3 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+}
+function svgBannerFail() {
+  return '<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="10" stroke="currentColor" stroke-width="2"/><path d="M7 7l8 8M15 7l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+}
+function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+// UI
+const API = "https://pay.frontiercompute.io";
+const $ = (id) => document.getElementById(id);
+let currentBundle = null;
+
+$("verifyBtn").addEventListener("click", doVerify);
+$("leafInput").addEventListener("keydown", (e) => { if (e.key === "Enter") doVerify(); });
+
+async function doVerify() {
+  const hash = $("leafInput").value.trim();
+  if (!hash) return;
+  $("errorBox").classList.add("hidden");
+  $("resultArea").classList.add("hidden");
+  $("loadingBox").classList.remove("hidden");
+  currentBundle = null;
+
+  try {
+    const res = await fetch(API + "/verify/" + encodeURIComponent(hash) + "/proof.json");
+    if (!res.ok) {
+      if (res.status === 404) throw new Error("Proof not found for this leaf hash");
+      throw new Error("HTTP " + res.status);
+    }
+    const data = await res.json();
+    currentBundle = data;
+    $("loadingBox").classList.add("hidden");
+    renderResult(data, hash);
+  } catch (err) {
+    $("loadingBox").classList.add("hidden");
+    $("errorBox").textContent = err.message;
+    $("errorBox").classList.remove("hidden");
+  }
+}
+
+function renderResult(bundle, inputHash) {
+  // Protocol tag
+  const tag = $("protocolTag");
+  tag.textContent = (bundle.protocol || "NSM1") + " v" + (bundle.version || "1");
+  tag.style.display = "inline-block";
+
+  // Verification
+  let leafRecomputed = false, leafMatch = null, recomputedHex = null;
+  if (bundle.leaf && bundle.leaf.wallet_hash) {
+    const computed = computeLeafHash(bundle.leaf.event_type, bundle.leaf.wallet_hash, bundle.leaf.serial_number);
+    if (computed) {
+      recomputedHex = bytesToHex(computed);
+      leafMatch = recomputedHex === bundle.leaf.hash;
+      leafRecomputed = true;
+    }
+  }
+  const { computedRoot, steps } = walkProof(bundle.leaf.hash, bundle.proof);
+  const rootMatch = computedRoot === bundle.root.hash;
+  const allOk = rootMatch && (leafMatch === null || leafMatch);
+
+  let html = "";
+
+  // Banner
+  html += '<div class="banner ' + (allOk ? "ok" : "fail") + '">';
+  html += allOk ? svgBannerOk() : svgBannerFail();
+  html += allOk
+    ? " VERIFIED - Proof is cryptographically valid"
+    : " FAILED - Proof verification did not pass";
+  html += "</div>";
+
+  // Checks
+  html += '<div class="card"><div class="section-title">Verification Checks</div>';
+  html += '<div class="check-row">';
+  if (leafRecomputed) {
+    html += svgCheck(leafMatch);
+    html += '<span style="color:' + (leafMatch ? "#22c55e" : "#ef4444") + '">';
+    html += leafMatch ? "Leaf hash recomputed from event data - matches" : "Leaf hash recomputed - MISMATCH";
+  } else {
+    html += svgSkip();
+    html += '<span style="color:#6b7280">Leaf recomputation skipped (' + esc(bundle.leaf.event_type) + ' formula not implemented client-side)';
+  }
+  html += "</span></div>";
+  html += '<div class="check-row">' + svgCheck(rootMatch);
+  html += '<span style="color:' + (rootMatch ? "#22c55e" : "#ef4444") + '">';
+  html += rootMatch ? "Merkle path walks to root - matches" : "Merkle path computed root does NOT match declared root";
+  html += "</span></div></div>";
+
+  // Leaf info
+  html += '<div class="card"><div class="section-title">Leaf</div>';
+  html += '<div class="info-grid">';
+  html += '<div><div class="info-label">Event Type</div><span class="event-badge">' + esc(bundle.leaf.event_type) + "</span></div>";
+  html += '<div><div class="info-label">Created</div><span style="font-size:12px;color:#9ca3af">';
+  html += bundle.leaf.created_at ? esc(new Date(bundle.leaf.created_at).toLocaleString()) : "-";
+  html += "</span></div>";
+  if (bundle.leaf.wallet_hash) {
+    html += '<div style="grid-column:1/-1"><div class="info-label">Wallet Hash</div>';
+    html += '<div class="mono" style="color:#e0e0e0">' + esc(bundle.leaf.wallet_hash) + "</div></div>";
+  }
+  html += "</div>";
+  html += '<div class="info-label">Leaf Hash</div>';
+  html += '<div class="mono" style="color:#818cf8;margin-top:4px">' + esc(bundle.leaf.hash) + "</div>";
+  if (leafRecomputed) {
+    html += '<div class="mono" style="color:' + (leafMatch ? "#22c55e" : "#ef4444") + ';margin-top:4px;font-size:11px">';
+    html += "Recomputed: " + esc(recomputedHex) + "</div>";
+  }
+  html += "</div>";
+
+  // Merkle path
+  html += '<div class="card"><div class="section-title">Merkle Path (' + bundle.proof.length + " step" + (bundle.proof.length !== 1 ? "s" : "") + ")</div>";
+  html += '<div class="path">';
+
+  // Leaf
+  html += '<div class="path-step">';
+  html += '<div class="path-label" style="color:#818cf8">Leaf</div>';
+  html += '<div class="path-node node-leaf" title="' + esc(bundle.leaf.hash) + '">' + esc(truncHash(bundle.leaf.hash, 16)) + "</div>";
+  html += "</div>";
+
+  // Steps
+  for (let i = 0; i < steps.length; i++) {
+    const step = steps[i];
+    const sibPos = bundle.proof[i].position;
+    const sibHash = bundle.proof[i].hash;
+    const isLast = i === steps.length - 1;
+
+    html += '<div class="path-step">';
+    html += '<div class="path-arrow">↓</div>';
+
+    // Pair
+    html += '<div class="pair-row">';
+    const leftIsS = sibPos === "left";
+    html += '<div class="path-node pair-node ' + (leftIsS ? "node-sib" : "node-comp") + '" title="' + esc(leftIsS ? sibHash : step.left) + '">';
+    html += '<span class="path-label" style="color:' + (leftIsS ? "#6b7280" : "#6366f1") + ';display:block">' + (leftIsS ? "Sibling (L)" : "Current") + "</span>";
+    html += esc(truncHash(leftIsS ? sibHash : step.left, 10));
+    html += "</div>";
+    html += '<span class="pair-plus">+</span>';
+    const rightIsS = sibPos === "right";
+    html += '<div class="path-node pair-node ' + (rightIsS ? "node-sib" : "node-comp") + '" title="' + esc(rightIsS ? sibHash : step.right) + '">';
+    html += '<span class="path-label" style="color:' + (rightIsS ? "#6b7280" : "#6366f1") + ';display:block">' + (rightIsS ? "Sibling (R)" : "Current") + "</span>";
+    html += esc(truncHash(rightIsS ? sibHash : step.right, 10));
+    html += "</div>";
+    html += "</div>";
+
+    // Result
+    html += '<div class="path-arrow">↓</div>';
+    const rootClass = isLast ? (rootMatch ? "node-root-ok" : "node-root-fail") : "node-comp";
+    const labelColor = isLast ? (rootMatch ? "#22c55e" : "#ef4444") : "#6366f1";
+    html += '<div class="path-node ' + rootClass + '" title="' + esc(step.result) + '">';
+    html += '<span class="path-label" style="color:' + labelColor + ';display:block">' + (isLast ? "Computed Root" : "Node " + (i + 1)) + "</span>";
+    html += esc(truncHash(step.result, 16));
+    html += "</div></div>";
+  }
+
+  // Root comparison
+  html += '<div class="root-compare">';
+  html += '<span style="color:#6b7280">Declared root: </span>';
+  html += '<span class="mono" style="color:' + (rootMatch ? "#22c55e" : "#ef4444") + '">' + esc(truncHash(bundle.root.hash, 16)) + "</span>";
+  html += '<span style="color:' + (rootMatch ? "#22c55e" : "#ef4444") + ';margin-left:6px;font-weight:600">' + (rootMatch ? "MATCH" : "MISMATCH") + "</span>";
+  html += "</div></div></div>";
+
+  // Anchor
+  if (bundle.anchor) {
+    html += '<div class="card"><div class="section-title">On-Chain Anchor</div>';
+    html += '<div class="anchor-row">';
+    html += '<a class="anchor-link" href="https://blockchair.com/zcash/transaction/' + encodeURIComponent(bundle.anchor.txid) + '" target="_blank" rel="noopener noreferrer" title="' + esc(bundle.anchor.txid) + '">';
+    html += esc(truncHash(bundle.anchor.txid, 20)) + " ↗</a>";
+    if (bundle.anchor.height) {
+      html += '<span class="anchor-block">Block ' + Number(bundle.anchor.height).toLocaleString() + "</span>";
+    }
+    html += "</div>";
+    if (bundle.root.leaf_count) {
+      html += '<div style="font-size:12px;color:#6b7280;margin-top:8px">Tree contains ' + bundle.root.leaf_count + " leaves</div>";
+    }
+    html += "</div>";
+  }
+
+  // Actions
+  html += '<div class="actions">';
+  html += '<button class="btn-outline" id="downloadBtn">↓ Download Proof Bundle</button>';
+  if (bundle.verify_command) {
+    html += '<button class="btn-outline" id="copyCmd">⎘ Copy CLI Command</button>';
+  }
+  html += "</div>";
+
+  $("resultArea").innerHTML = html;
+  $("resultArea").classList.remove("hidden");
+
+  // Wire buttons
+  const dlBtn = document.getElementById("downloadBtn");
+  if (dlBtn) dlBtn.addEventListener("click", downloadBundle);
+  const cpBtn = document.getElementById("copyCmd");
+  if (cpBtn) cpBtn.addEventListener("click", () => {
+    navigator.clipboard.writeText(currentBundle.verify_command);
+    cpBtn.textContent = "Copied!";
+    setTimeout(() => { cpBtn.textContent = "⎘ Copy CLI Command"; }, 2000);
+  });
+}
+
+function downloadBundle() {
+  if (!currentBundle) return;
+  const blob = new Blob([JSON.stringify(currentBundle, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "proof-" + (currentBundle.leaf ? currentBundle.leaf.hash.slice(0, 16) : "bundle") + ".json";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Self-test on load (silent, logs to console)
+(function selfTest() {
+  const expected = "075b00df286038a7b3f6bb70054df61343e3481fba579591354a00214e9e019b";
+  const result = computeLeafHash("PROGRAM_ENTRY", "e2e_wallet_20260327");
+  const hex = result ? bytesToHex(result) : "null";
+  if (hex === expected) {
+    console.log("[BLAKE2b self-test] PASS - leaf hash matches test vector");
+  } else {
+    console.error("[BLAKE2b self-test] FAIL - expected", expected, "got", hex);
+  }
+})();
+</script>
+</body>
+</html>

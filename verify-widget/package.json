@@ -1,0 +1,42 @@
+{
+  "name": "@frontier-compute/verify-widget",
+  "version": "1.0.0",
+  "description": "Zero-trust in-browser Merkle proof verifier for the Nordic Shield on-chain protocol (NSM1)",
+  "type": "module",
+  "main": "blake2b.js",
+  "exports": {
+    ".": "./blake2b.js",
+    "./blake2b": "./blake2b.js",
+    "./verifier": "./ProofVerifier.jsx"
+  },
+  "files": [
+    "blake2b.js",
+    "ProofVerifier.jsx",
+    "verify-standalone.html"
+  ],
+  "keywords": [
+    "zcash",
+    "blake2b",
+    "merkle",
+    "proof",
+    "verification",
+    "nordic-shield",
+    "nsm1",
+    "zero-trust"
+  ],
+  "author": "zk_nd3r <zk_nd3r@frontiercompute.io>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Frontier-Compute/nsm1",
+    "directory": "verify-widget"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  }
+}
