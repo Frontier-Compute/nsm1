@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nordic Shield Dashboard{TESTNET_TITLE}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0a0e17; color:#e2e4e8; font-family:'Helvetica Neue',system-ui,sans-serif; }
+  .page { min-height:100vh; padding:24px; max-width:640px; margin:0 auto; }
+  .header { text-align:center; padding:24px 0; }
+  .logo { color:#d4a843; font-size:10px; letter-spacing:0.25em; text-transform:uppercase; font-weight:600; }
+  .wallet-id { color:#4a5168; font-size:10px; font-family:monospace; margin-top:6px; }
+  .section { margin-bottom:20px; }
+  .section-title { font-size:10px; color:#d4a843; letter-spacing:0.15em; text-transform:uppercase; font-weight:600; margin-bottom:12px; font-family:monospace; }
+  .miner-card { background:linear-gradient(135deg,#0f1420,#0d1b2a); border:1px solid #1a2235; border-radius:8px; padding:20px; margin-bottom:12px; }
+  .miner-status { display:inline-block; padding:4px 12px; border-radius:12px; font-size:10px; font-weight:600; letter-spacing:0.1em; }
+  .miner-stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin:14px 0; }
+  .stat { text-align:center; }
+  .stat-value { font-size:20px; font-weight:700; color:#d4a843; font-family:monospace; }
+  .stat-label { font-size:9px; color:#4a5168; text-transform:uppercase; letter-spacing:0.08em; margin-top:2px; }
+  .miner-detail { display:flex; justify-content:space-between; padding:6px 0; font-size:11px; }
+  .miner-detail .label { color:#4a5168; }
+  .miner-detail .value { color:#e2e4e8; font-family:monospace; }
+  .badge { display:inline-block; padding:3px 8px; border-radius:10px; font-size:9px; letter-spacing:0.06em; text-transform:uppercase; margin-right:6px; }
+  .badge-orchard { background:#8b5cf610; border:1px solid #6d3fc430; color:#8b5cf6; }
+  .badge-zk { background:#3d9b8f10; border:1px solid #3d9b8f30; color:#3d9b8f; }
+  .invoice-row { display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:#080b12; border:1px solid #1a2235; border-radius:6px; margin-bottom:8px; font-size:11px; }
+  .invoice-status { font-size:10px; font-weight:600; letter-spacing:0.08em; }
+  .invoice-status.paid { color:#3d9b8f; }
+  .invoice-status.pending { color:#d4a843; }
+  .pay-btn { display:inline-block; padding:6px 14px; background:linear-gradient(135deg,#d4a843,#8a6e2f); color:#0a0e17; font-size:10px; font-weight:600; border-radius:4px; text-decoration:none; letter-spacing:0.06em; text-transform:uppercase; }
+  .revenue-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+  .revenue-card { background:#080b12; border:1px solid #1a2235; border-radius:6px; padding:14px; text-align:center; }
+  .revenue-value { font-size:18px; font-weight:700; font-family:monospace; color:#3d9b8f; }
+  .revenue-label { font-size:9px; color:#4a5168; text-transform:uppercase; letter-spacing:0.08em; margin-top:4px; }
+  .cohort-bar { background:#1a2235; border-radius:4px; height:8px; margin:8px 0; overflow:hidden; }
+  .cohort-fill { height:100%; background:linear-gradient(90deg,#d4a843,#3d9b8f); border-radius:4px; transition:width 0.5s; }
+  .footer { text-align:center; padding:24px 0; color:#3e4556; font-size:9px; line-height:1.8; }
+  .footer a { color:#4a5168; text-decoration:none; }
+  @media (max-width:480px) {
+    .page { padding:16px; }
+    .revenue-grid { grid-template-columns:1fr 1fr; gap:8px; }
+    .revenue-value { font-size:16px; }
+    .miner-stats { gap:8px; }
+    .stat-value { font-size:16px; }
+    .invoice-row { flex-direction:column; gap:8px; align-items:flex-start; }
+  }
+</style>
+</head><body>
+{TESTNET_BANNER}
+<div class="page">
+  <div class="header">
+    <img src="https://frontiercompute.io/logo-192.png" alt="" style="width:28px;height:28px;margin-bottom:8px">
+    <div class="logo">Nordic Shield Dashboard</div>
+    <div class="wallet-id">{WALLET_SHORT}</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Revenue Estimate</div>
+    <div class="revenue-grid">
+      <div class="revenue-card">
+        <div class="revenue-value">{ZEC_PER_MONTH}</div>
+        <div class="revenue-label">ZEC / month</div>
+      </div>
+      <div class="revenue-card">
+        <div class="revenue-value" style="color:#d4a843">${COST_PER_ZEC}</div>
+        <div class="revenue-label">All-in cost / ZEC</div>
+      </div>
+      <div class="revenue-card">
+        <div class="revenue-value">{ZEC_PER_YEAR}</div>
+        <div class="revenue-label">ZEC / year</div>
+      </div>
+      <div class="revenue-card">
+        <div class="revenue-value" style="color:#d4a843">${MONTHLY_HOSTING}</div>
+        <div class="revenue-label">Hosting / month</div>
+      </div>
+    </div>
+    <div style="font-size:9px;color:#4a5168;font-family:monospace;text-align:center">~2.6 ZEC/month per Z15 Pro at current difficulty. Not a guarantee.</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Your Miners</div>
+    {MINERS_HTML}
+  </div>
+
+  <div class="section">
+    <div class="section-title">Billing</div>
+    {BILLING_HTML}
+  </div>
+
+  <div class="section">
+    <div class="section-title">Program Cohort</div>
+    <div style="font-size:11px;color:#e2e4e8;margin-bottom:4px">
+      <span style="color:#d4a843;font-family:monospace;font-weight:600">{TOTAL_MACHINES}</span> machines &middot;
+      <span style="color:#3d9b8f;font-family:monospace;font-weight:600">{CURRENT_TIER}</span> &middot;
+      <span style="font-family:monospace;color:#4a5168">{MACHINES_TO_NEXT} more to {NEXT_TIER}</span>
+    </div>
+    <div class="cohort-bar"><div class="cohort-fill" style="width:{TIER_PROGRESS}%"></div></div>
+  </div>
+
+  <div style="text-align:center; margin:16px 0">
+    <span class="badge badge-orchard">Payouts to your wallet</span>
+    <span class="badge badge-zk">ZK-proved ownership</span>
+  </div>
+
+  <div style="text-align:center; margin:20px 0">
+    <a href="https://signal.me/#eu/HW4cIbYYnA_S4Hto1Uf5DJUXbdqmBCKbQKxMnXhMoCGFeSR05A9L95XWZz8hHjmK" target="_blank" rel="noopener" style="display:inline-block; padding:10px 24px; background:linear-gradient(135deg,#d4a843,#8a6e2f); color:#0a0e17; font-size:11px; font-weight:600; border-radius:4px; text-decoration:none; letter-spacing:0.08em; text-transform:uppercase">Contact via Signal</a>
+  </div>
+
+  <div class="footer">
+    <a href="https://frontiercompute.io">Frontier Compute</a> &middot; Scandinavia<br>
+    Your name is nowhere. Your ZEC is yours.<br>
+    Auto-refreshes every 60s
+  </div>
+</div>
+{REFRESH_SCRIPT}
+</body></html>

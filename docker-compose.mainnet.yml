@@ -1,0 +1,11 @@
+services:
+  nsm1:
+    build:
+      context: .
+    container_name: nsm1
+    env_file: .env.mainnet
+    volumes:
+      - ./data:/data
+      # Uncomment when anchor automation is activated:
+    network_mode: host
+    restart: unless-stopped

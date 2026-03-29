@@ -1,0 +1,127 @@
+# nsm1
+
+Reference implementation for the NSM1 structured memo protocol on Zcash.
+
+Built for [Nordic Shield](https://nordicshield.frontiercompute.io)  - privacy-shielded mining infrastructure operated by [Frontier Compute](https://frontiercompute.io).
+
+## What it does
+
+- **Payment receiver**: Creates unique Orchard shielded addresses per invoice. Detects payments via trial decryption against a Zebra full node. ZIP-321 QR codes. Signal notifications.
+- **On-chain attestation**: Every program entry and hardware assignment is committed to a BLAKE2b Merkle tree. The root is periodically anchored on Zcash via a shielded memo transaction. Anyone can verify ownership without trusting the operator.
+- **Verification**: `/verify/{leaf_hash}` renders a proof page showing the Merkle proof path, root, anchor txid, and block height. An independent Python verifier (`verify_proof.py`) can recompute and confirm proofs offline.
+
+## Protocol
+
+Twelve memo types are defined in NSM1. Nine are deployed and three are
+reserved for Crosslink:
+
+| Type | Name | Trigger |
+|------|------|---------|
+| `0x01` | `PROGRAM_ENTRY` | Starter pack or initial program invoice confirmed |
+| `0x02` | `OWNERSHIP_ATTEST` | Machine serial assigned to wallet |
+| `0x03` | `CONTRACT_ANCHOR` | Hosting contract artifact committed by hash |
+| `0x04` | `DEPLOYMENT` | Miner installed and activated at facility |
+| `0x05` | `HOSTING_PAYMENT` | Monthly hosting invoice paid |
+| `0x06` | `SHIELD_RENEWAL` | Annual privacy shield renewal paid |
+| `0x07` | `TRANSFER` | Ownership transferred to a new wallet hash |
+| `0x08` | `EXIT` | Participant exit or hardware release recorded |
+| `0x09` | `MERKLE_ROOT` | Current Merkle root anchored to Zcash |
+| `0x0A` | `STAKING_DEPOSIT` | Reserved for Crosslink |
+| `0x0B` | `STAKING_WITHDRAW` | Reserved for Crosslink |
+| `0x0C` | `STAKING_REWARD` | Reserved for Crosslink |
+
+All hashes use BLAKE2b-256 with `NordicShield_` personalization. Merkle nodes use `NordicShield_MRK`. Full spec: [ONCHAIN_PROTOCOL.md](ONCHAIN_PROTOCOL.md).
+
+## First mainnet proof
+
+Anchored on Zcash mainnet block **3,286,631** on March 27, 2026.
+
+- Anchor txid: `98e1d6a01614c464c237f982d9dc2138c5f8aa08342f67b867a18a4ce998af9a`
+- Root: `024e36515ea30efc15a0a7962dd8f677455938079430b9eab174f46a4328a07a`
+- Details: [E2E_PROOF_20260327.md](E2E_PROOF_20260327.md)
+
+## Stack
+
+- **Rust** (axum, rusqlite, zcash_client_backend, blake2b_simd, qrcode)
+- **Zebra 4.3.0** for RPC (getblock, getrawtransaction, getrawmempool)
+- **SQLite** for invoices, Merkle leaves, Merkle roots, payment records
+- **Docker** for deployment
+
+## Setup
+
+```bash
+cp .env.example .env.mainnet
+# Edit .env.mainnet with your UFVK, API_KEY, etc.
+docker compose -f docker-compose.mainnet.yml build
+docker compose -f docker-compose.mainnet.yml up -d
+```
+
+## API
+
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| POST | /invoice | Bearer | Create payment invoice |
+| GET | /pay/{id} |  - | Payment page with QR |
+| GET | /invoice/{id} |  - | Invoice status JSON |
+| GET | /invoices |  - | List invoices with optional status filtering |
+| POST | /assign | Bearer | Assign serial to wallet |
+| POST | /event | Bearer | Create lifecycle event leaf |
+| GET | /miner/{wallet_hash} |  - | Miner dashboard |
+| GET | /miner/{wallet_hash}/status |  - | Machine status JSON for the miner dashboard |
+| GET | /miner/{wallet_hash}/verify |  - | Viewing-key and verification metadata for the miner |
+| GET | /verify/{leaf_hash} |  - | Ownership proof page |
+| GET | /verify/{leaf_hash}/check |  - | Proof-check endpoint for programmatic verification |
+| GET | /verify/{leaf_hash}/proof.json |  - | Downloadable proof bundle JSON |
+| GET | /lifecycle/{wallet_hash} |  - | Participant lifecycle JSON |
+| GET | /stats |  - | Aggregate lifecycle and anchor stats |
+| GET | /health |  - | Scanner health JSON |
+| GET | /anchor/status |  - | Current anchor scheduler and pending-root status |
+| GET | /anchor/history |  - | Historical root anchors and transaction references |
+| GET | /protocol/info |  - | NSM1 protocol metadata, event types, and versioning |
+| POST | /auto-invoice | Bearer | Create or deduplicate recurring billing invoices |
+| GET | /cohort |  - | Cohort-level revenue and participant metrics |
+| GET | /admin/overview |  - | Aggregated admin dashboard data |
+
+## Independent verification
+
+```bash
+python3 verify_proof.py \
+  --wallet-hash <wallet_hash> \
+  --serial <serial_number> \
+  --proof proof.json \
+  --root <expected_root_hex>
+```
+
+## Verification SDK
+
+The standalone Rust + WASM verifier is published at
+[`Frontier-Compute/nsm1-verify`](https://github.com/Frontier-Compute/nsm1-verify).
+It implements NSM1 leaf hashing, Merkle proof walking, and browser-friendly
+verification primitives without depending on the reference implementation server.
+
+## FROST Threshold Signing
+
+The current FROST design package is documented in
+[FROST_THREAT_MODEL.md](FROST_THREAT_MODEL.md). A sanitized reference
+implementation of the 2-of-3 Pallas signing round is published in
+[docs/FROST_SIGNING_PROTOCOL.rs](docs/FROST_SIGNING_PROTOCOL.rs).
+
+## ZIP Proposal
+
+A draft ZIP for the structured NSM1 memo protocol is in progress. It codifies
+the typed memo envelope, event hash rules, and Merkle-root anchoring flow used
+by the reference implementation, alongside the companion verifier and published
+test vectors.
+
+## Run tests
+
+```bash
+cargo test --release --test memo_merkle_test
+```
+
+23 tests covering memo encode/decode, hash determinism, Merkle tree computation, proof generation, and proof verification.
+
+## License
+
+MIT
+# updated 2026-03-27T23:30:24Z

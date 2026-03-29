@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nordic Shield Payment{TESTNET_TITLE}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0a0e17; color:#e2e4e8; font-family:'Helvetica Neue',system-ui,sans-serif; {TESTNET_PADDING} }
+  .page { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+  .card { width:100%; max-width:440px; background:linear-gradient(135deg,#0f1420,#0d1b2a); border:1px solid #1a2235; border-radius:12px; overflow:hidden; }
+  .header { padding:28px 32px 0; text-align:center; }
+  .shield { display:inline-block; width:32px; height:32px; margin-bottom:12px; }
+  .logo { color:#d4a843; font-size:11px; letter-spacing:0.25em; text-transform:uppercase; font-weight:600; }
+  .status-bar { margin:20px 32px; padding:10px 0; border-top:1px solid #1a2235; border-bottom:1px solid #1a2235; text-align:center; }
+  .status { display:inline-block; padding:6px 20px; border-radius:20px; font-size:11px; font-weight:600; letter-spacing:0.12em; color:{STATUS_COLOR}; border:1px solid {STATUS_COLOR}30; background:{STATUS_COLOR}08; }
+  .body { padding:0 32px 28px; }
+  .memo { color:#7a8194; font-size:13px; text-align:center; margin-bottom:20px; line-height:1.5; }
+  .amount-box { text-align:center; padding:24px 0; }
+  .amount { font-size:42px; font-weight:700; color:#d4a843; letter-spacing:-0.02em; }
+  .unit { font-size:16px; color:#8a6e2f; margin-left:6px; font-weight:500; }
+  .received { font-size:13px; color:#3d9b8f; margin-top:8px; }
+  .send-label { color:#4a5168; font-size:11px; text-align:center; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:12px; }
+  .address { background:#080b12; border:1px solid #1a2235; border-radius:8px; padding:16px; word-break:break-all; font-family:'JetBrains Mono',monospace; font-size:11px; color:#d4a843; line-height:1.7; text-align:center; cursor:pointer; transition:all 0.2s; position:relative; }
+  .address:hover { border-color:#d4a843; background:#0a0e17; }
+  .copy-toast { position:absolute; top:-28px; left:50%; transform:translateX(-50%); background:#d4a843; color:#0a0e17; padding:4px 12px; border-radius:4px; font-size:10px; font-weight:600; opacity:0; transition:opacity 0.3s; pointer-events:none; }
+  .hint { text-align:center; color:#4a5168; font-size:10px; margin-top:10px; letter-spacing:0.05em; }
+  .orchard-badge { display:inline-flex; align-items:center; gap:4px; margin-top:12px; padding:4px 10px; border-radius:12px; background:#8b5cf610; border:1px solid #6d3fc430; font-size:10px; color:#8b5cf6; letter-spacing:0.08em; text-transform:uppercase; }
+  .footer { padding:20px 32px; border-top:1px solid #1a2235; text-align:center; }
+  .footer-text { color:#3e4556; font-size:10px; line-height:1.8; letter-spacing:0.03em; }
+  .footer a { color:#4a5168; text-decoration:none; }
+  .paid-box { margin:16px 0; padding:16px; background:#3d9b8f10; border:1px solid #3d9b8f25; border-radius:8px; text-align:center; }
+  .paid-box .label { color:#3d9b8f; font-size:12px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; }
+  .paid-box .txid { color:#4a5168; font-size:10px; font-family:monospace; margin-top:6px; word-break:break-all; }
+</style>
+</head><body>
+{TESTNET_BANNER}
+<div class="page">
+<div class="card">
+  <div class="header">
+    <svg class="shield" viewBox="0 0 100 100" fill="none"><path d="M50 5L10 25V50C10 75 30 92 50 97C70 92 90 75 90 50V25L50 5Z" stroke="#d4a843" stroke-width="2.5" opacity="0.9"/><path d="M50 35V65M38 50H62" stroke="#d4a843" stroke-width="2.5" stroke-linecap="round"/></svg>
+    <div class="logo">Nordic Shield</div>
+  </div>
+  <div class="status-bar"><span class="status">{STATUS_TEXT}</span></div>
+  <div class="body">
+    {MEMO_LINE}
+    <div class="amount-box">
+      <span class="amount">{AMOUNT_ZEC}</span><span class="unit">ZEC</span>
+      {RECEIVED_LINE}
+    </div>
+    <div class="send-label">Send to shielded address with memo</div>
+    <div class="address" id="addr" onclick="navigator.clipboard.writeText(document.getElementById('addr').dataset.addr);var t=document.getElementById('toast');t.style.opacity=1;setTimeout(function(){t.style.opacity=0},1500)" data-addr="{ADDRESS}">
+      <span class="copy-toast" id="toast">Copied</span>
+      {ADDRESS}
+    </div>
+    <div style="text-align:center">
+      <div class="hint">Tap address to copy</div>
+      <div class="orchard-badge">Orchard shielded</div>
+    </div>
+    <div style="margin-top:16px;padding:16px;background:#0a0e17;border:1px solid #1a2235;border-radius:8px;text-align:center">
+      <div style="color:#4a5168;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:12px">Scan with Zodl, Zashi, or Zingo</div>
+      <div style="display:inline-block;padding:12px;background:#ffffff;border-radius:8px;margin-bottom:12px">{QR_SVG}</div>
+      <div style="color:#4a5168;font-size:9px;margin-top:4px">ZIP-321 URI: <span style="color:#d4a843;cursor:pointer;word-break:break-all" onclick="navigator.clipboard.writeText('{ZCASH_URI_RAW}')">{ZCASH_URI_SHORT}</span></div>
+      <div style="color:#4a5168;font-size:8px;margin-top:4px">Tap URI to copy. Paste into Zodl, Zashi, or Zingo.</div>
+      <div style="margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#4a5168;cursor:pointer" onclick="navigator.clipboard.writeText('NS-{INVOICE_SHORT}')">Memo: NS-{INVOICE_SHORT}</div>
+    </div>
+    {PAID_INFO}
+  </div>
+  <div class="footer">
+    <div class="footer-text">
+      <a href="https://frontiercompute.io">Frontier Compute</a> &middot; Invoice {INVOICE_SHORT}<br>
+      {EXPIRES_LINE}
+      No cookies &middot; No tracking &middot; Shielded end-to-end
+    </div>
+  </div>
+</div>
+</div>
+{REFRESH_SCRIPT}
+</body></html>
