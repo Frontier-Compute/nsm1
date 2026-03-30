@@ -21,6 +21,7 @@ struct AnchorHistoryResponse {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct AnchorRecord {
     height: Option<u32>,
     leaf_count: usize,
