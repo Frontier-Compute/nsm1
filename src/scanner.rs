@@ -312,9 +312,9 @@ async fn scan_mempool(
 
 /// Create the appropriate lifecycle Merkle leaf when an invoice is paid.
 /// Maps invoice_type to the correct event type:
-///   "program" | "initial" → PROGRAM_ENTRY
-///   "hosting"             → HOSTING_PAYMENT (needs serial from miner_assignments)
-///   "renewal"             → SHIELD_RENEWAL
+///   "program" | "initial" -> PROGRAM_ENTRY
+///   "hosting"             -> HOSTING_PAYMENT (needs serial from miner_assignments)
+///   "renewal"             -> SHIELD_RENEWAL
 fn create_lifecycle_leaf_for_invoice(db: &Db, invoice: &crate::models::Invoice, wallet_hash: &str) {
     let result = match invoice.invoice_type.as_str() {
         "program" | "initial" => db
@@ -377,7 +377,7 @@ fn create_lifecycle_leaf_for_invoice(db: &Db, invoice: &crate::models::Invoice, 
     }
 }
 
-/// Parse hosting period from memo like "NS-hosting-2026-07-..." → (7, 2026)
+/// Parse hosting period from memo like "NS-hosting-2026-07-..." -> (7, 2026)
 fn parse_hosting_period(memo: Option<&str>) -> (u32, u32) {
     if let Some(memo) = memo {
         let parts: Vec<&str> = memo.split('-').collect();
@@ -395,7 +395,7 @@ fn parse_hosting_period(memo: Option<&str>) -> (u32, u32) {
     )
 }
 
-/// Parse renewal year from memo like "NS-renewal-2027-..." → 2027
+/// Parse renewal year from memo like "NS-renewal-2027-..." -> 2027
 fn parse_renewal_year(memo: Option<&str>) -> u32 {
     if let Some(memo) = memo {
         let parts: Vec<&str> = memo.split('-').collect();

@@ -184,7 +184,7 @@ impl NodeBackend for ZainoBackend {
             .iter()
             .map(|ctx| {
                 let mut txid_bytes = ctx.txid.clone();
-                txid_bytes.reverse(); // protocol order → display order
+                txid_bytes.reverse(); // protocol order -> display order
                 hex::encode(txid_bytes)
             })
             .collect();
@@ -197,7 +197,7 @@ impl NodeBackend for ZainoBackend {
 
         // Convert display-order hex txid to protocol-order bytes
         let mut txid_bytes = hex::decode(txid).context("Invalid txid hex")?;
-        txid_bytes.reverse(); // display order → protocol order
+        txid_bytes.reverse(); // display order -> protocol order
 
         let resp = client
             .get_transaction(TxFilter {
