@@ -148,7 +148,25 @@ Confirms:
 - Our anchor transactions are retrievable via both Zebra RPC and Zaino gRPC
 - NodeBackend trait abstracts both backends
 
-## 12. ZIP draft
+## 12. Operator tooling
+
+```bash
+git clone https://github.com/Frontier-Compute/zap1.git
+cd zap1
+cargo run --bin zap1_ops -- --base-url https://pay.frontiercompute.io --json
+cargo run --bin zap1_schema -- --witness examples/schema_witness.json
+cargo run --bin zaino_adapter -- --zaino-url http://127.0.0.1:8137 --api-url https://pay.frontiercompute.io
+```
+
+Confirms:
+
+- operator status rollup works against live stack
+- event witness data recomputes to the anchored leaf hash
+- Zaino compact block path retrieves all anchor transactions
+
+Operator runbook: `https://github.com/Frontier-Compute/zap1/blob/main/docs/OPERATOR_RUNBOOK.md`
+
+## 13. ZIP draft
 
 PR:
 
