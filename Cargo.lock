@@ -3492,6 +3492,8 @@ dependencies = [
 [[package]]
 name = "zcash-memo-decode"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "43fe9f9893e24c86022b259f3aa32c80ca4b56970822581a090360604356b151"
 
 [[package]]
 name = "zcash_address"
