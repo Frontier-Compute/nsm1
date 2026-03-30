@@ -553,6 +553,33 @@ impl Db {
         Ok(leaves)
     }
 
+    pub fn list_recent_leaves(&self, limit: usize) -> Result<Vec<MerkleLeafRecord>> {
+        let conn = self.conn()?;
+        let mut stmt = conn.prepare(
+            "SELECT leaf_hash, event_type, wallet_hash, serial_number, created_at
+             FROM merkle_leaves
+             ORDER BY id DESC
+             LIMIT ?1",
+        )?;
+        let rows = stmt.query_map(params![limit as i64], |row| {
+            let event_type_raw: i64 = row.get(1)?;
+            let event_type = MemoType::from_u8(event_type_raw as u8)
+                .map_err(|_| rusqlite::Error::InvalidQuery)?;
+            Ok(MerkleLeafRecord {
+                leaf_hash: row.get(0)?,
+                event_type,
+                wallet_hash: row.get(2)?,
+                serial_number: row.get(3)?,
+                created_at: row.get(4)?,
+            })
+        })?;
+        let mut leaves = Vec::new();
+        for row in rows {
+            leaves.push(row?);
+        }
+        Ok(leaves)
+    }
+
     /// Get aggregate stats for the /stats endpoint.
     pub fn get_stats(&self) -> Result<(usize, usize, Option<u32>, Option<u32>)> {
         let conn = self.conn()?;

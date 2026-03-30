@@ -90,6 +90,7 @@ pub fn router(state: AppState) -> Router {
         .route("/badge/status.svg", get(badge_status))
         .route("/badge/leaf/{leaf_hash}", get(badge_leaf))
         .route("/build/info", get(build_info))
+        .route("/events", get(recent_events))
         .route("/memo/decode", post(memo_decode_endpoint))
         .route("/webhooks", get(list_webhooks))
         .route("/webhooks/register", post(register_webhook))
@@ -912,6 +913,44 @@ async fn anchor_history(
         "anchors": anchors,
         "total": total,
         "last_anchor_age_hours": last_anchor_age_hours,
+    })))
+}
+
+/// Recent attestation events. Discoverable feed for explorers and indexers.
+async fn recent_events(
+    State(state): State<AppState>,
+    Query(params): Query<std::collections::HashMap<String, String>>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let limit = params
+        .get("limit")
+        .and_then(|v| v.parse::<usize>().ok())
+        .unwrap_or(50)
+        .min(200);
+
+    let leaves = state
+        .db
+        .list_recent_leaves(limit)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    let events: Vec<serde_json::Value> = leaves
+        .iter()
+        .map(|l| {
+            serde_json::json!({
+                "leaf_hash": l.leaf_hash,
+                "event_type": l.event_type.label(),
+                "wallet_hash": l.wallet_hash,
+                "serial_number": l.serial_number,
+                "created_at": l.created_at,
+                "verify_url": format!("/verify/{}", l.leaf_hash),
+                "proof_url": format!("/verify/{}/proof.json", l.leaf_hash),
+            })
+        })
+        .collect();
+
+    Ok(Json(serde_json::json!({
+        "protocol": "ZAP1",
+        "total_returned": events.len(),
+        "events": events,
     })))
 }
 
