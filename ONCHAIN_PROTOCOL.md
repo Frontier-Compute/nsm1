@@ -23,29 +23,21 @@ ships, ZAP1 payloads should be carried as a ZIP 302 part type. The attestation
 semantics below (event types, hash construction, Merkle rules) are independent
 of the memo container.
 
-Payloads use this binary layout before memo encoding:
+The deployed memo encoding is:
 
 ```text
-byte 0      : version            = 0x01
-byte 1      : type               = 0x01..0x0c
-bytes 2..5  : cohort_id          = u32 big-endian
-bytes 6..37 : payload_hash       = 32 bytes
-bytes 38..45: timestamp          = u64 big-endian unix seconds
-bytes 46..77: serial_hash        = 32 bytes, or 32 zero bytes when unused
-bytes 78..n : note               = UTF-8 human-readable note, optional
-```
-
-For human-readable transport, the shielded memo payload is rendered as:
-
-```text
-ZAP1:{type}:{payload}
+ZAP1:{type}:{payload_hash}
 ```
 
 Where:
 
-- `ZAP1` is the protocol marker
-- `{type}` is the two-digit lowercase hex type byte
-- `{payload}` is the hex encoding of the binary layout above
+- `ZAP1` is the protocol marker (legacy memos use `NSM1`, accepted during decode)
+- `{type}` is the two-digit lowercase hex event type byte (01-0c)
+- `{payload_hash}` is the 64-character hex encoding of the 32-byte BLAKE2b-256 payload hash
+
+Total memo size: 73 bytes (4 + 1 + 2 + 1 + 64 + 1 separators). Fits in any Zcash shielded memo (512 bytes pre-ZIP 231, 16 KiB post-ZIP 231).
+
+The payload hash is computed per event type using BLAKE2b-256 with `NordicShield_` personalization. See EVENT_SCHEMA.md for the full hash construction rules per type.
 
 Transaction types:
 
