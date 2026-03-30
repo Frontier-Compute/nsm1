@@ -1,0 +1,9 @@
+{
+  "last_scanned_height": 3290812,
+  "chain_tip": 3290812,
+  "sync_lag": 0,
+  "pending_invoices": 0,
+  "scanner_operational": true,
+  "network": "MainNetwork",
+  "rpc_reachable": true
+}

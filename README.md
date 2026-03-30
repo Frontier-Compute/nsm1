@@ -104,11 +104,13 @@ verification primitives without depending on the reference implementation server
 ```bash
 cargo run --bin zap1_audit -- --bundle examples/live_ownership_attest_proof.json
 cargo run --bin zip302_tvlv -- encode examples/zip302_parts_example.json
+cargo run --bin zap1_ops -- --from-dir examples/zap1_ops_fixture --json
 python3 scripts/check_anchor_liveness.py
 ```
 
 - `zap1_audit`: verify a proof bundle with `zap1-verify` and print the anchor facts to check on-chain
 - `zip302_tvlv`: reference ZIP 302 TVLV encoder/decoder built on `src/zip302.rs`
+- `zap1_ops`: operator status rollup for scanner lag, anchor freshness, queue depth, and last proofable root
 - `check_anchor_liveness.py`: compare public ZAP1 surfaces for freshness and consistency
 
 ## Ecosystem

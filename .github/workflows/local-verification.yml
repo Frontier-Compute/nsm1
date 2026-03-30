@@ -29,5 +29,8 @@ jobs:
           memo_hex=$(cargo run --quiet --bin zip302_tvlv -- encode examples/zip302_parts_example.json | tail -n 1)
           cargo run --quiet --bin zip302_tvlv -- decode "$memo_hex"
 
+      - name: Run operator status rollup
+        run: cargo run --quiet --bin zap1_ops -- --from-dir examples/zap1_ops_fixture --json
+
       - name: Compile liveness script
         run: python3 -m py_compile scripts/check_anchor_liveness.py
