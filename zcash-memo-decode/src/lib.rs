@@ -11,7 +11,7 @@
 
 mod tvlv;
 
-pub use tvlv::{TvlvError, TvlvPart, encode as encode_tvlv, decode as decode_tvlv};
+pub use tvlv::{decode as decode_tvlv, encode as encode_tvlv, TvlvError, TvlvPart};
 
 /// Decoded memo with identified format and parsed content.
 #[derive(Debug, Clone, PartialEq)]
@@ -30,9 +30,7 @@ pub enum MemoFormat {
     },
 
     /// ZIP 302 structured memo (0xF7 prefix, TVLV-encoded parts).
-    Zip302Tvlv {
-        parts: Vec<TvlvPart>,
-    },
+    Zip302Tvlv { parts: Vec<TvlvPart> },
 
     /// Empty memo (0xF6 followed by zeros, or all zeros).
     Empty,
@@ -41,10 +39,7 @@ pub enum MemoFormat {
     Binary(Vec<u8>),
 
     /// Unrecognized format. Not an error - just a format we don't know.
-    Unknown {
-        first_byte: u8,
-        length: usize,
-    },
+    Unknown { first_byte: u8, length: usize },
 }
 
 /// Which attestation protocol produced the memo.
@@ -102,8 +97,14 @@ pub fn decode(bytes: &[u8]) -> MemoFormat {
 pub fn label(fmt: &MemoFormat) -> &'static str {
     match fmt {
         MemoFormat::Text(_) => "text",
-        MemoFormat::Attestation { protocol: AttestationProtocol::Zap1, .. } => "zap1",
-        MemoFormat::Attestation { protocol: AttestationProtocol::Nsm1Legacy, .. } => "nsm1",
+        MemoFormat::Attestation {
+            protocol: AttestationProtocol::Zap1,
+            ..
+        } => "zap1",
+        MemoFormat::Attestation {
+            protocol: AttestationProtocol::Nsm1Legacy,
+            ..
+        } => "nsm1",
         MemoFormat::Zip302Tvlv { .. } => "zip302",
         MemoFormat::Empty => "empty",
         MemoFormat::Binary(_) => "binary",

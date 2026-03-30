@@ -256,7 +256,17 @@ mod tests {
 
     #[test]
     fn compact_size_roundtrip() {
-        for n in [0, 1, 252, 253, 1000, 65535, 65536, 0xFFFF_FFFF, 0x1_0000_0000] {
+        for n in [
+            0,
+            1,
+            252,
+            253,
+            1000,
+            65535,
+            65536,
+            0xFFFF_FFFF,
+            0x1_0000_0000,
+        ] {
             let encoded = encode_compact_size(n);
             let (decoded, _) = decode_compact_size(&encoded).unwrap();
             assert_eq!(decoded, n, "compact_size failed for {n}");
