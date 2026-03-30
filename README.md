@@ -99,6 +99,15 @@ The standalone Rust + WASM verifier is published at
 It implements NSM1 leaf hashing, Merkle proof walking, and browser-friendly
 verification primitives without depending on the reference implementation server.
 
+## Ecosystem
+
+- **Verification SDK (Rust + WASM):** [nsm1-verify on crates.io](https://crates.io/crates/nsm1-verify) - 22 tests
+- **JS/TS SDK:** [@frontiercompute/nsm1 on npm](https://www.npmjs.com/package/@frontiercompute/nsm1) - 19 tests
+- **Attestation explorer:** [explorer.frontiercompute.io](https://explorer.frontiercompute.io)
+- **Lifecycle simulator:** [simulator.frontiercompute.io](https://simulator.frontiercompute.io)
+- **Browser verifier:** [frontiercompute.io/verify.html](https://frontiercompute.io/verify.html)
+- **Zaino gRPC:** validated on mainnet - [ZAINO_VALIDATION.md](ZAINO_VALIDATION.md)
+
 ## FROST Threshold Signing
 
 The current FROST design package is documented in
