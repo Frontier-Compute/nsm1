@@ -64,7 +64,7 @@ tokio-stream = "0.1"
 zap1-verify = { path = "zap1-verify" }
 
 # Universal memo decoder
-zcash-memo-decode = { path = "../zcash-memo-decode" }
+zcash-memo-decode = { path = "zcash-memo-decode" }
 
 [build-dependencies]
 tonic-build = "0.12"

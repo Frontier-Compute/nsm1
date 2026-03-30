@@ -11,6 +11,7 @@ COPY Cargo.toml Cargo.lock* build.rs ./
 COPY src/ src/
 COPY proto/ proto/
 COPY zap1-verify/ zap1-verify/
+COPY zcash-memo-decode/ zcash-memo-decode/
 COPY migrations/ migrations/
 COPY tests/ tests/
 

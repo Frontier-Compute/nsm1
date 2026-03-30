@@ -1,0 +1,13 @@
+[package]
+name = "zcash-memo-decode"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70.0"
+authors = ["zk_nd3r <zk_nd3r@frontiercompute.io>"]
+description = "Universal decoder for Zcash shielded memo formats. Identifies plain text, ZIP 302 TVLV, ZAP1/NSM1 attestation, binary, and empty memos."
+license = "MIT"
+repository = "https://github.com/Frontier-Compute/zcash-memo-decode"
+keywords = ["zcash", "memo", "shielded", "zip302", "privacy"]
+categories = ["cryptography::cryptocurrencies", "parsing"]
+
+[dependencies]
