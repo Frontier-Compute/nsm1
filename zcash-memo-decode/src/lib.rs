@@ -66,7 +66,16 @@ pub fn decode(bytes: &[u8]) -> MemoFormat {
     }
 
     match bytes[0] {
-        0xF6 => MemoFormat::Empty,
+        0xF6 => {
+            if all_zeros(&bytes[1..]) {
+                MemoFormat::Empty
+            } else {
+                MemoFormat::Unknown {
+                    first_byte: 0xF6,
+                    length: bytes.len(),
+                }
+            }
+        }
 
         0xF7 => match tvlv::decode(bytes) {
             Ok(parts) => MemoFormat::Zip302Tvlv { parts },

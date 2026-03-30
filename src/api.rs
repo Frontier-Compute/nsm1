@@ -1603,8 +1603,8 @@ async fn memo_decode_endpoint(
     body: String,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
     let hex_str = body.trim();
-    let bytes = hex::decode(hex_str)
-        .map_err(|e| (StatusCode::BAD_REQUEST, format!("invalid hex: {e}")))?;
+    let bytes =
+        hex::decode(hex_str).map_err(|e| (StatusCode::BAD_REQUEST, format!("invalid hex: {e}")))?;
 
     let decoded = zcash_memo_decode::decode(&bytes);
     let fmt = zcash_memo_decode::label(&decoded);
@@ -1622,21 +1622,27 @@ async fn memo_decode_endpoint(
             raw,
         } => serde_json::json!({
             "format": fmt,
-            "protocol": format!("{:?}", protocol),
+            "protocol": match protocol {
+                zcash_memo_decode::AttestationProtocol::Zap1 => "ZAP1",
+                zcash_memo_decode::AttestationProtocol::Nsm1Legacy => "NSM1",
+            },
             "event_type": format!("0x{:02x}", event_type),
             "event_label": event_label,
             "payload_hash": hex::encode(payload_hash),
             "raw": raw,
         }),
         zcash_memo_decode::MemoFormat::Zip302Tvlv { parts } => {
-            let parts_json: Vec<serde_json::Value> = parts.iter().map(|p| {
-                serde_json::json!({
-                    "part_type": p.part_type,
-                    "version": p.version,
-                    "value_hex": hex::encode(&p.value),
-                    "value_utf8": String::from_utf8(p.value.clone()).ok(),
+            let parts_json: Vec<serde_json::Value> = parts
+                .iter()
+                .map(|p| {
+                    serde_json::json!({
+                        "part_type": p.part_type,
+                        "version": p.version,
+                        "value_hex": hex::encode(&p.value),
+                        "value_utf8": String::from_utf8(p.value.clone()).ok(),
+                    })
                 })
-            }).collect();
+                .collect();
             serde_json::json!({
                 "format": fmt,
                 "parts": parts_json,
