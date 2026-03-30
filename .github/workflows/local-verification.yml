@@ -1,0 +1,33 @@
+name: local-verification
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  example-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run proof bundle audit
+        run: cargo run --quiet --bin zap1_audit -- --bundle examples/live_ownership_attest_proof.json
+
+      - name: Run ZIP 302 encode/decode roundtrip
+        run: |
+          memo_hex=$(cargo run --quiet --bin zip302_tvlv -- encode examples/zip302_parts_example.json | tail -n 1)
+          cargo run --quiet --bin zip302_tvlv -- decode "$memo_hex"
+
+      - name: Compile liveness script
+        run: python3 -m py_compile scripts/check_anchor_liveness.py

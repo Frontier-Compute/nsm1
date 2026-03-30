@@ -50,6 +50,15 @@ impl Db {
             [],
         )?;
 
+        // Clamp impossible historical root metadata. A root cannot cover more
+        // leaves than currently exist in the Merkle leaf table.
+        conn.execute(
+            "UPDATE merkle_roots
+             SET leaf_count = (SELECT COUNT(*) FROM merkle_leaves)
+             WHERE leaf_count > (SELECT COUNT(*) FROM merkle_leaves)",
+            [],
+        )?;
+
         Ok(Db {
             conn: Mutex::new(conn),
         })
@@ -685,15 +694,20 @@ impl Db {
 
     pub fn all_anchored_roots(&self) -> Result<Vec<crate::merkle::MerkleRootRecord>> {
         let conn = self.conn()?;
+        let total_leaves = total_leaf_count_conn(&conn)?;
         let mut stmt = conn.prepare(
             "SELECT root_hash, leaf_count, anchor_txid, anchor_height, created_at
              FROM merkle_roots ORDER BY id ASC",
         )?;
         let roots = stmt
             .query_map([], |row| {
+                let leaf_count = normalize_root_leaf_count(
+                    row.get::<_, i64>(1)? as usize,
+                    total_leaves,
+                );
                 Ok(crate::merkle::MerkleRootRecord {
                     root_hash: row.get(0)?,
-                    leaf_count: row.get::<_, i64>(1)? as usize,
+                    leaf_count,
                     anchor_txid: row.get(2)?,
                     anchor_height: row.get::<_, Option<i64>>(3)?.map(|h| h as u32),
                     created_at: row.get(4)?,
@@ -968,6 +982,7 @@ fn merkle_leaf_by_hash(conn: &Connection, leaf_hash: &str) -> Result<Option<Merk
 }
 
 fn current_root(conn: &Connection) -> Result<Option<MerkleRootRecord>> {
+    let total_leaves = total_leaf_count_conn(conn)?;
     let mut stmt = conn.prepare(
         "SELECT root_hash, leaf_count, anchor_txid, anchor_height, created_at
          FROM merkle_roots
@@ -975,9 +990,10 @@ fn current_root(conn: &Connection) -> Result<Option<MerkleRootRecord>> {
          LIMIT 1",
     )?;
     let result = stmt.query_row([], |row| {
+        let leaf_count = normalize_root_leaf_count(row.get::<_, i64>(1)? as usize, total_leaves);
         Ok(MerkleRootRecord {
             root_hash: row.get(0)?,
-            leaf_count: row.get::<_, i64>(1)? as usize,
+            leaf_count,
             anchor_txid: row.get(2)?,
             anchor_height: row.get::<_, Option<i64>>(3)?.map(|value| value as u32),
             created_at: row.get(4)?,
@@ -987,5 +1003,30 @@ fn current_root(conn: &Connection) -> Result<Option<MerkleRootRecord>> {
         Ok(root) => Ok(Some(root)),
         Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
         Err(error) => Err(error.into()),
+    }
+}
+
+fn total_leaf_count_conn(conn: &Connection) -> Result<usize> {
+    let count: i64 = conn.query_row("SELECT COUNT(*) FROM merkle_leaves", [], |row| row.get(0))?;
+    Ok(count as usize)
+}
+
+fn normalize_root_leaf_count(leaf_count: usize, total_leaves: usize) -> usize {
+    leaf_count.min(total_leaves)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::normalize_root_leaf_count;
+
+    #[test]
+    fn normalize_root_leaf_count_preserves_valid_count() {
+        assert_eq!(normalize_root_leaf_count(12, 12), 12);
+        assert_eq!(normalize_root_leaf_count(2, 12), 2);
+    }
+
+    #[test]
+    fn normalize_root_leaf_count_clamps_impossible_count() {
+        assert_eq!(normalize_root_leaf_count(13, 12), 12);
     }
 }

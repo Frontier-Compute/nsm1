@@ -4,7 +4,7 @@
 //! - Monitors unanchored leaf count and time since last anchor
 //! - Builds ZAP1:09 memo with current Merkle root
 //! - Broadcasts via zingo-cli (or future embedded tx builder)
-//! - Implements exponential backoff on failure (5m → 10m → 20m → 40m → 60m cap)
+//! - Implements exponential backoff on failure (5m, 10m, 20m, 40m, 60m cap)
 //! - Sends Signal + webhook notifications on success/failure
 //! - Confirms anchor height from Zebra RPC after broadcast
 

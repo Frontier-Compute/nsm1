@@ -11,3 +11,4 @@ pub mod node;
 pub mod notify;
 pub mod scanner;
 pub mod webhook;
+pub mod zip302;

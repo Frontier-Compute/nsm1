@@ -94,15 +94,27 @@ python3 verify_proof.py \
 
 ## Verification SDK
 
-The standalone Rust + WASM verifier is published at
+The standalone Rust + WASM verifier is available at
 [`Frontier-Compute/zap1-verify`](https://github.com/Frontier-Compute/zap1-verify).
 It implements ZAP1 leaf hashing, Merkle proof walking, and browser-friendly
 verification primitives without depending on the reference implementation server.
 
+## Operator and evaluator tools
+
+```bash
+cargo run --bin zap1_audit -- --bundle examples/live_ownership_attest_proof.json
+cargo run --bin zip302_tvlv -- encode examples/zip302_parts_example.json
+python3 scripts/check_anchor_liveness.py
+```
+
+- `zap1_audit`: verify a proof bundle with `zap1-verify` and print the anchor facts to check on-chain
+- `zip302_tvlv`: reference ZIP 302 TVLV encoder/decoder built on `src/zip302.rs`
+- `check_anchor_liveness.py`: compare public ZAP1 surfaces for freshness and consistency
+
 ## Ecosystem
 
-- **Verification SDK (Rust + WASM):** [zap1-verify on crates.io](https://crates.io/crates/zap1-verify) - 22 tests
-- **JS/TS SDK:** [@frontiercompute/zap1 on npm](https://www.npmjs.com/package/@frontiercompute/zap1) - 19 tests
+- **Verification SDK (Rust + WASM):** [Frontier-Compute/zap1-verify](https://github.com/Frontier-Compute/zap1-verify) - 22 tests
+- **JS/TS SDK:** [Frontier-Compute/zap1-js](https://github.com/Frontier-Compute/zap1-js) - 19 tests
 - **Attestation explorer:** [explorer.frontiercompute.io](https://explorer.frontiercompute.io)
 - **Lifecycle simulator:** [simulator.frontiercompute.io](https://simulator.frontiercompute.io)
 - **Browser verifier:** [frontiercompute.io/verify.html](https://frontiercompute.io/verify.html)
