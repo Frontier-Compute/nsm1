@@ -178,7 +178,10 @@ async fn main() -> Result<()> {
     }
 
     println!();
-    println!("result: {} pass, {} fail, {} total anchors", pass, fail, anchors.total);
+    println!(
+        "result: {} pass, {} fail, {} total anchors",
+        pass, fail, anchors.total
+    );
 
     if fail > 0 {
         std::process::exit(1);

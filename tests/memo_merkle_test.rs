@@ -243,8 +243,14 @@ fn new_zap1_prefix_encodes() {
 
 #[test]
 fn contract_anchor_hash_deterministic() {
-    let h1 = hash_contract_anchor("Z15P-001", "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890");
-    let h2 = hash_contract_anchor("Z15P-001", "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890");
+    let h1 = hash_contract_anchor(
+        "Z15P-001",
+        "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+    );
+    let h2 = hash_contract_anchor(
+        "Z15P-001",
+        "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+    );
     assert_eq!(h1, h2);
 }
 

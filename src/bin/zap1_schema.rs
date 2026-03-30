@@ -50,15 +50,16 @@ async fn main() -> Result<()> {
     let raw = match &cli.source {
         Source::File(path) => fs::read_to_string(path)
             .with_context(|| format!("failed to read witness file: {path}"))?,
-        Source::Url(url) => reqwest::get(url)
-            .await
-            .with_context(|| format!("failed to fetch: {url}"))?
-            .text()
-            .await?,
+        Source::Url(url) => {
+            reqwest::get(url)
+                .await
+                .with_context(|| format!("failed to fetch: {url}"))?
+                .text()
+                .await?
+        }
     };
 
-    let witness_file: WitnessFile =
-        serde_json::from_str(&raw).context("invalid witness JSON")?;
+    let witness_file: WitnessFile = serde_json::from_str(&raw).context("invalid witness JSON")?;
 
     let mut results = Vec::new();
     let mut pass = 0;
@@ -84,7 +85,12 @@ async fn main() -> Result<()> {
     } else {
         for r in &results {
             let status = if r.valid { "pass" } else { "FAIL" };
-            println!("{}: {} hash={}", status, r.event_type, &r.computed_hash[..16.min(r.computed_hash.len())]);
+            println!(
+                "{}: {} hash={}",
+                status,
+                r.event_type,
+                &r.computed_hash[..16.min(r.computed_hash.len())]
+            );
             if let Some(err) = &r.error {
                 println!("  error: {}", err);
             }
@@ -103,14 +109,20 @@ async fn main() -> Result<()> {
 fn validate_event(event: &EventWitness) -> Result<ValidationResult> {
     let computed = match event.event_type.as_str() {
         "PROGRAM_ENTRY" => {
-            let wh = event.wallet_hash.as_ref()
+            let wh = event
+                .wallet_hash
+                .as_ref()
                 .ok_or_else(|| anyhow!("PROGRAM_ENTRY requires wallet_hash"))?;
             hash_payload(0x01, wh.as_bytes())
         }
         "OWNERSHIP_ATTEST" => {
-            let wh = event.wallet_hash.as_ref()
+            let wh = event
+                .wallet_hash
+                .as_ref()
                 .ok_or_else(|| anyhow!("OWNERSHIP_ATTEST requires wallet_hash"))?;
-            let sn = event.serial_number.as_ref()
+            let sn = event
+                .serial_number
+                .as_ref()
                 .ok_or_else(|| anyhow!("OWNERSHIP_ATTEST requires serial_number"))?;
             let mut payload = Vec::new();
             payload.extend_from_slice(&(wh.len() as u16).to_be_bytes());
@@ -120,9 +132,13 @@ fn validate_event(event: &EventWitness) -> Result<ValidationResult> {
             hash_payload(0x02, &payload)
         }
         "CONTRACT_ANCHOR" => {
-            let sn = event.serial_number.as_ref()
+            let sn = event
+                .serial_number
+                .as_ref()
                 .ok_or_else(|| anyhow!("CONTRACT_ANCHOR requires serial_number"))?;
-            let cs = event.contract_sha256.as_ref()
+            let cs = event
+                .contract_sha256
+                .as_ref()
                 .ok_or_else(|| anyhow!("CONTRACT_ANCHOR requires contract_sha256"))?;
             let mut payload = Vec::new();
             payload.extend_from_slice(&(sn.len() as u16).to_be_bytes());
@@ -132,11 +148,16 @@ fn validate_event(event: &EventWitness) -> Result<ValidationResult> {
             hash_payload(0x03, &payload)
         }
         "DEPLOYMENT" => {
-            let sn = event.serial_number.as_ref()
+            let sn = event
+                .serial_number
+                .as_ref()
                 .ok_or_else(|| anyhow!("DEPLOYMENT requires serial_number"))?;
-            let fi = event.facility_id.as_ref()
+            let fi = event
+                .facility_id
+                .as_ref()
                 .ok_or_else(|| anyhow!("DEPLOYMENT requires facility_id"))?;
-            let ts = event.timestamp
+            let ts = event
+                .timestamp
                 .ok_or_else(|| anyhow!("DEPLOYMENT requires timestamp"))?;
             let mut payload = Vec::new();
             payload.extend_from_slice(&(sn.len() as u16).to_be_bytes());
@@ -147,11 +168,15 @@ fn validate_event(event: &EventWitness) -> Result<ValidationResult> {
             hash_payload(0x04, &payload)
         }
         "HOSTING_PAYMENT" => {
-            let sn = event.serial_number.as_ref()
+            let sn = event
+                .serial_number
+                .as_ref()
                 .ok_or_else(|| anyhow!("HOSTING_PAYMENT requires serial_number"))?;
-            let month = event.month
+            let month = event
+                .month
                 .ok_or_else(|| anyhow!("HOSTING_PAYMENT requires month"))?;
-            let year = event.year
+            let year = event
+                .year
                 .ok_or_else(|| anyhow!("HOSTING_PAYMENT requires year"))?;
             let mut payload = Vec::new();
             payload.extend_from_slice(&(sn.len() as u16).to_be_bytes());
@@ -161,9 +186,12 @@ fn validate_event(event: &EventWitness) -> Result<ValidationResult> {
             hash_payload(0x05, &payload)
         }
         "SHIELD_RENEWAL" => {
-            let wh = event.wallet_hash.as_ref()
+            let wh = event
+                .wallet_hash
+                .as_ref()
                 .ok_or_else(|| anyhow!("SHIELD_RENEWAL requires wallet_hash"))?;
-            let year = event.year
+            let year = event
+                .year
                 .ok_or_else(|| anyhow!("SHIELD_RENEWAL requires year"))?;
             let mut payload = Vec::new();
             payload.extend_from_slice(&(wh.len() as u16).to_be_bytes());
@@ -172,11 +200,17 @@ fn validate_event(event: &EventWitness) -> Result<ValidationResult> {
             hash_payload(0x06, &payload)
         }
         "TRANSFER" => {
-            let ow = event.old_wallet_hash.as_ref()
+            let ow = event
+                .old_wallet_hash
+                .as_ref()
                 .ok_or_else(|| anyhow!("TRANSFER requires old_wallet_hash"))?;
-            let nw = event.new_wallet_hash.as_ref()
+            let nw = event
+                .new_wallet_hash
+                .as_ref()
                 .ok_or_else(|| anyhow!("TRANSFER requires new_wallet_hash"))?;
-            let sn = event.serial_number.as_ref()
+            let sn = event
+                .serial_number
+                .as_ref()
                 .ok_or_else(|| anyhow!("TRANSFER requires serial_number"))?;
             let mut payload = Vec::new();
             payload.extend_from_slice(&(ow.len() as u16).to_be_bytes());
@@ -188,11 +222,16 @@ fn validate_event(event: &EventWitness) -> Result<ValidationResult> {
             hash_payload(0x07, &payload)
         }
         "EXIT" => {
-            let wh = event.wallet_hash.as_ref()
+            let wh = event
+                .wallet_hash
+                .as_ref()
                 .ok_or_else(|| anyhow!("EXIT requires wallet_hash"))?;
-            let sn = event.serial_number.as_ref()
+            let sn = event
+                .serial_number
+                .as_ref()
                 .ok_or_else(|| anyhow!("EXIT requires serial_number"))?;
-            let ts = event.timestamp
+            let ts = event
+                .timestamp
                 .ok_or_else(|| anyhow!("EXIT requires timestamp"))?;
             let mut payload = Vec::new();
             payload.extend_from_slice(&(wh.len() as u16).to_be_bytes());
@@ -203,7 +242,9 @@ fn validate_event(event: &EventWitness) -> Result<ValidationResult> {
             hash_payload(0x08, &payload)
         }
         "MERKLE_ROOT" => {
-            let root_hex = event.merkle_root.as_ref()
+            let root_hex = event
+                .merkle_root
+                .as_ref()
                 .ok_or_else(|| anyhow!("MERKLE_ROOT requires merkle_root"))?;
             let root_bytes = hex::decode(root_hex).context("invalid merkle_root hex")?;
             if root_bytes.len() != 32 {
@@ -228,7 +269,11 @@ fn validate_event(event: &EventWitness) -> Result<ValidationResult> {
         computed_hash: computed_hex,
         expected_hash: event.expected_hash.clone(),
         valid,
-        error: if valid { None } else { Some("hash mismatch".to_string()) },
+        error: if valid {
+            None
+        } else {
+            Some("hash mismatch".to_string())
+        },
     })
 }
 
@@ -271,12 +316,14 @@ fn parse_args() -> Result<Cli> {
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--witness" => {
-                let path = args.next()
+                let path = args
+                    .next()
                     .ok_or_else(|| anyhow!("missing value for --witness"))?;
                 source = Some(Source::File(path));
             }
             "--witness-url" => {
-                let url = args.next()
+                let url = args
+                    .next()
                     .ok_or_else(|| anyhow!("missing value for --witness-url"))?;
                 source = Some(Source::Url(url));
             }
