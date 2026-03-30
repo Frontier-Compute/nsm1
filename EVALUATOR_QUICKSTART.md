@@ -135,7 +135,20 @@ cd nsm1
 cargo test --release --test memo_merkle_test
 ```
 
-## 11. ZIP draft
+## 11. Zaino gRPC validation
+
+Details:
+
+`https://github.com/Frontier-Compute/nsm1/blob/main/ZAINO_VALIDATION.md`
+
+Confirms:
+
+- Zaino 0.2.0 gRPC serving on the same infrastructure as the production scanner
+- GetBlock, GetBlockRange, GetTransaction, GetLatestTreeState all tested
+- Our anchor transactions are retrievable via both Zebra RPC and Zaino gRPC
+- NodeBackend trait abstracts both backends
+
+## 12. ZIP draft
 
 PR:
 
@@ -145,3 +158,4 @@ Confirms:
 
 - the protocol has been pushed into the Zcash standards process
 - scope is application-layer attestation, not wallet transport
+- ZIP 302 relationship documented
