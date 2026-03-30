@@ -12,6 +12,10 @@ repository = "https://github.com/Frontier-Compute/zap1"
 name = "anchor_root"
 path = "src/bin/anchor_root.rs"
 
+[[bin]]
+name = "zaino_adapter"
+path = "src/bin/zaino_adapter.rs"
+
 [dependencies]
 # Zcash
 zcash_client_backend = { version = "0.21", default-features = false, features = ["orchard"] }
