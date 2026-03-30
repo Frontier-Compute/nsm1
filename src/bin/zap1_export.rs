@@ -34,6 +34,7 @@ struct ProofEntry {
     root: String,
     anchor_txid: Option<String>,
     anchor_height: Option<u32>,
+    witness: serde_json::Value,
 }
 
 #[derive(Debug, Serialize)]
@@ -84,9 +85,13 @@ struct LifecycleResponse {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct LifecycleEvent {
     leaf_hash: String,
     event_type: String,
+    serial_number: Option<String>,
+    created_at: Option<String>,
+    anchored: Option<bool>,
 }
 
 struct Cli {
@@ -104,8 +109,8 @@ async fn main() -> Result<()> {
         .timeout(std::time::Duration::from_secs(15))
         .build()?;
 
-    // get leaf hashes to export
-    let leaf_hashes = collect_leaf_hashes(&client, &cli).await?;
+    // get leaf hashes and lifecycle events
+    let (leaf_hashes, leaf_events) = collect_leaf_hashes(&client, &cli).await?;
 
     if leaf_hashes.is_empty() {
         eprintln!("no matching leaves found");
@@ -134,6 +139,9 @@ async fn main() -> Result<()> {
             .await
             .with_context(|| format!("invalid proof JSON for {}", &hash[..12]))?;
 
+        // find the lifecycle event for this leaf to get witness fields
+        let lifecycle_event = leaf_events.iter().find(|e| e.leaf_hash == *hash);
+
         proofs.push(ProofEntry {
             leaf_hash: bundle.leaf.hash,
             event_type: bundle.leaf.event_type,
@@ -148,6 +156,13 @@ async fn main() -> Result<()> {
             root: bundle.root.hash,
             anchor_txid: bundle.anchor.txid,
             anchor_height: bundle.anchor.height,
+            witness: serde_json::json!({
+                "wallet_hash_preimage": cli.wallet_hash,
+                "serial_number": lifecycle_event.and_then(|e| e.serial_number.clone()),
+                "hash_function": "BLAKE2b-256",
+                "personalization": "NordicShield_",
+                "recompute": "hash(type_byte || length_prefixed_fields) with NordicShield_ personalization",
+            }),
         });
     }
 
@@ -189,7 +204,10 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn collect_leaf_hashes(client: &reqwest::Client, cli: &Cli) -> Result<Vec<String>> {
+async fn collect_leaf_hashes(
+    client: &reqwest::Client,
+    cli: &Cli,
+) -> Result<(Vec<String>, Vec<LifecycleEvent>)> {
     if let Some(wh) = &cli.wallet_hash {
         let url = format!("{}/lifecycle/{}", cli.api_url, wh);
         let resp = client
@@ -199,14 +217,14 @@ async fn collect_leaf_hashes(client: &reqwest::Client, cli: &Cli) -> Result<Vec<
             .context("failed to fetch lifecycle")?;
         let body: LifecycleResponse = resp.json().await.context("invalid lifecycle JSON")?;
 
-        let hashes: Vec<String> = body
+        let filtered: Vec<LifecycleEvent> = body
             .events
-            .iter()
+            .into_iter()
             .filter(|e| cli.event_types.is_empty() || cli.event_types.contains(&e.event_type))
-            .map(|e| e.leaf_hash.clone())
             .collect();
+        let hashes: Vec<String> = filtered.iter().map(|e| e.leaf_hash.clone()).collect();
 
-        Ok(hashes)
+        Ok((hashes, filtered))
     } else {
         Err(anyhow!("--wallet-hash required to scope the export"))
     }
