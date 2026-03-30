@@ -19,12 +19,12 @@ Status: Validated on mainnet
 | GetLatestBlock | Height 3,289,945, hash returned |
 | GetBlock(3286631) | First anchor block, compact tx data present |
 | GetBlockRange(3286631-3286633) | 3 blocks streamed |
-| GetTransaction(9eb952bb...) | 5th anchor tx, height 3,289,870, full raw data |
+| GetTransaction(ba63e44f...) | Anchor tx at height 3,290,002, full raw data |
 | GetLatestTreeState | Sapling + Orchard tree state at tip |
 
 ## Anchor Verification via Zaino
 
-Our 5th anchor (txid 9eb952bb180f34bc4ecf4390c4e5c139ccccd9cc03036e1c467c4ceab1dd55f1) was retrieved via Zaino gRPC, confirming the dual-backend path works for NSM1 anchor verification.
+The latest anchor (txid ba63e44f9589c63baaebae25eb0c369bf59a7d4db559f6b51cf8a2b27fc7793b, block 3,290,002) was retrieved via Zaino gRPC, confirming the dual-backend path works for NSM1 anchor verification.
 
 ## Dual Backend Summary
 

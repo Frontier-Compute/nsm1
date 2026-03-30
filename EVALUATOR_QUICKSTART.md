@@ -25,8 +25,8 @@ Open:
 Confirms:
 
 - network: `MainNetwork`
-- total anchors: `3`
-- total leaves: `12`
+- total anchors and total leaves (live counts from the API)
+- anchors and leaves should both be nonzero
 - current event type registry as exposed by the live API
 
 ## 3. Anchor history
