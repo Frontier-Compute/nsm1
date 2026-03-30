@@ -80,7 +80,39 @@ async fn main() -> Result<()> {
         }));
     }
 
-    if cli.json {
+    if cli.emit_witness {
+        let witness_bundle: Vec<serde_json::Value> = witness_file
+            .events
+            .iter()
+            .zip(results.iter())
+            .map(|(event, result)| {
+                serde_json::json!({
+                    "event_type": event.event_type,
+                    "computed_hash": result.computed_hash,
+                    "valid": result.valid,
+                    "personalization": "NordicShield_",
+                    "hash_function": "BLAKE2b-256",
+                    "preimage": {
+                        "wallet_hash": event.wallet_hash,
+                        "serial_number": event.serial_number,
+                        "contract_sha256": event.contract_sha256,
+                        "facility_id": event.facility_id,
+                        "timestamp": event.timestamp,
+                        "month": event.month,
+                        "year": event.year,
+                        "old_wallet_hash": event.old_wallet_hash,
+                        "new_wallet_hash": event.new_wallet_hash,
+                        "merkle_root": event.merkle_root,
+                    },
+                    "verification": {
+                        "procedure": "recompute BLAKE2b-256 with type byte prefix and NordicShield_ personalization",
+                        "sdk": "zap1-verify (crates.io) or zcash-memo-decode (crates.io)",
+                    }
+                })
+            })
+            .collect();
+        println!("{}", serde_json::to_string_pretty(&witness_bundle)?);
+    } else if cli.json {
         println!("{}", serde_json::to_string_pretty(&results)?);
     } else {
         for r in &results {
@@ -306,12 +338,14 @@ enum Source {
 struct Cli {
     source: Source,
     json: bool,
+    emit_witness: bool,
 }
 
 fn parse_args() -> Result<Cli> {
     let mut args = std::env::args().skip(1);
     let mut source = None;
     let mut json = false;
+    let mut emit_witness = false;
 
     while let Some(arg) = args.next() {
         match arg.as_str() {
@@ -328,6 +362,7 @@ fn parse_args() -> Result<Cli> {
                 source = Some(Source::Url(url));
             }
             "--json" => json = true,
+            "--emit-witness" => emit_witness = true,
             "--help" | "-h" => {
                 print_usage();
                 std::process::exit(0);
@@ -339,6 +374,7 @@ fn parse_args() -> Result<Cli> {
     Ok(Cli {
         source: source.ok_or_else(|| anyhow!("usage: zap1_schema --witness <file.json>"))?,
         json,
+        emit_witness,
     })
 }
 
@@ -346,5 +382,6 @@ fn print_usage() {
     eprintln!("Usage:");
     eprintln!("  zap1_schema --witness <events.json>");
     eprintln!("  zap1_schema --witness <events.json> --json");
+    eprintln!("  zap1_schema --witness <events.json> --emit-witness");
     eprintln!("  zap1_schema --witness-url <url>");
 }
