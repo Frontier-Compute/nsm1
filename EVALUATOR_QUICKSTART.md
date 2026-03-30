@@ -1,8 +1,18 @@
 # ZAP1 Evaluator Quickstart
 
-This is the fastest path to validate the protocol's technical claims in under 10 minutes.
+## Fastest path
 
-## 1. Protocol metadata
+```bash
+git clone https://github.com/Frontier-Compute/zap1.git
+cd zap1
+bash scripts/evaluate.sh
+```
+
+12 checks. Live API, crates.io, tests, proof bundles, schema validation, memo decode, all surfaces. Takes about 2 minutes with Rust installed.
+
+## Step by step
+
+### 1. Protocol metadata
 
 Open:
 
