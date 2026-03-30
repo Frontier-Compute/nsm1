@@ -297,7 +297,7 @@ fn evaluate(
     }
 
     if let Some(last_anchor) = anchor_history.anchors.last() {
-        if Some(last_anchor.height.unwrap_or_default()) != anchor_status.last_anchor_height {
+        if last_anchor.height != anchor_status.last_anchor_height {
             errors.push(format!(
                 "latest anchor height mismatch: history={:?} status={:?}",
                 last_anchor.height, anchor_status.last_anchor_height
@@ -309,7 +309,7 @@ fn evaluate(
                 last_anchor.txid, anchor_status.last_anchor_txid
             ));
         }
-        if Some(last_anchor.height.unwrap_or_default()) != stats.last_anchor_block {
+        if last_anchor.height != stats.last_anchor_block {
             errors.push(format!(
                 "last anchor block mismatch: history={:?} stats={:?}",
                 last_anchor.height, stats.last_anchor_block
@@ -562,7 +562,7 @@ mod tests {
     fn report_is_ok_when_inputs_match() {
         let cli = base_cli();
         let mut stats = base_stats();
-        let mut history = base_anchor_history();
+        let history = base_anchor_history();
         stats.total_anchors = 1;
         let report = evaluate(
             &base_protocol(),
@@ -576,7 +576,6 @@ mod tests {
         assert!(report.errors.is_empty());
         assert!(report.warnings.is_empty());
         assert_eq!(report.anchors.last_proofable_height, Some(3288022));
-        history.last_anchor_age_hours = Some(24);
     }
 
     #[test]
@@ -604,6 +603,118 @@ mod tests {
             .warnings
             .iter()
             .any(|item| item.contains("unanchored leaves")));
+    }
+
+    #[test]
+    fn report_handles_no_anchor_history() {
+        let cli = base_cli();
+        let stats = StatsResponse {
+            total_anchors: 0,
+            total_leaves: 0,
+            first_anchor_block: None,
+            last_anchor_block: None,
+        };
+        let status = AnchorStatusResponse {
+            current_root: "none".to_string(),
+            leaf_count: 0,
+            unanchored_leaves: 0,
+            last_anchor_txid: None,
+            last_anchor_height: None,
+            needs_anchor: false,
+            recommendation: "up to date".to_string(),
+        };
+        let history = AnchorHistoryResponse {
+            anchors: Vec::new(),
+            last_anchor_age_hours: None,
+            total: 0,
+        };
+        let report = evaluate(
+            &base_protocol(),
+            &base_health(),
+            &stats,
+            &status,
+            &history,
+            &cli,
+        );
+        assert_eq!(report.status, "warn");
+        assert!(report.errors.is_empty());
+        assert!(report
+            .warnings
+            .iter()
+            .any(|item| item.contains("last anchor age is unknown")));
+    }
+
+    #[test]
+    fn report_warns_when_anchor_is_old_but_queue_is_empty() {
+        let cli = base_cli();
+        let mut stats = base_stats();
+        let mut history = base_anchor_history();
+        stats.total_anchors = 1;
+        history.last_anchor_age_hours = Some(96);
+        let report = evaluate(
+            &base_protocol(),
+            &base_health(),
+            &stats,
+            &base_anchor_status(),
+            &history,
+            &cli,
+        );
+        assert_eq!(report.status, "warn");
+        assert!(report.errors.is_empty());
+        assert!(report
+            .warnings
+            .iter()
+            .any(|item| item.contains("last anchor age 96h exceeds threshold 72h")));
+    }
+
+    #[test]
+    fn report_is_critical_when_anchor_is_old_and_work_is_waiting() {
+        let cli = base_cli();
+        let mut stats = base_stats();
+        let mut status = base_anchor_status();
+        let mut history = base_anchor_history();
+        stats.total_anchors = 1;
+        status.unanchored_leaves = 3;
+        status.needs_anchor = true;
+        history.last_anchor_age_hours = Some(96);
+        let report = evaluate(
+            &base_protocol(),
+            &base_health(),
+            &stats,
+            &status,
+            &history,
+            &cli,
+        );
+        assert_eq!(report.status, "critical");
+        assert!(report
+            .errors
+            .iter()
+            .any(|item| item.contains("last anchor age 96h exceeds threshold 72h")));
+    }
+
+    #[test]
+    fn report_is_critical_on_protocol_mismatch() {
+        let cli = base_cli();
+        let mut stats = base_stats();
+        let history = base_anchor_history();
+        stats.total_anchors = 1;
+        let protocol = ProtocolInfo {
+            protocol: "NSM1".to_string(),
+            version: "2.2.0".to_string(),
+        };
+        let report = evaluate(
+            &protocol,
+            &base_health(),
+            &stats,
+            &base_anchor_status(),
+            &history,
+            &cli,
+        );
+        assert_eq!(report.status, "critical");
+        assert!(report
+            .errors
+            .iter()
+            .any(|item| item.contains("protocol mismatch")));
     }
 
     #[test]

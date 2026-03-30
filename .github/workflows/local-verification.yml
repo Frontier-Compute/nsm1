@@ -32,5 +32,15 @@ jobs:
       - name: Run operator status rollup
         run: cargo run --quiet --bin zap1_ops -- --from-dir examples/zap1_ops_fixture --json
 
+      - name: Run operator status unit tests
+        run: cargo test --quiet --bin zap1_ops
+
+      - name: Fail on inconsistent operator fixture
+        run: |
+          if cargo run --quiet --bin zap1_ops -- --from-dir examples/zap1_ops_fixture_critical --json; then
+            echo "expected zap1_ops to fail on critical fixture"
+            exit 1
+          fi
+
       - name: Compile liveness script
         run: python3 -m py_compile scripts/check_anchor_liveness.py
