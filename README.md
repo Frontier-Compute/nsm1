@@ -1,14 +1,27 @@
 # zap1
 
-Reference implementation for the ZAP1 lifecycle attestation protocol on Zcash.
+[![ci](https://github.com/Frontier-Compute/zap1/actions/workflows/ci.yml/badge.svg)](https://github.com/Frontier-Compute/zap1/actions/workflows/ci.yml)
 
-Built for [Nordic Shield](https://nordicshield.frontiercompute.io)  - privacy-shielded mining infrastructure operated by [Frontier Compute](https://frontiercompute.io).
+Open-source attestation protocol for Zcash. Commits typed lifecycle events to a BLAKE2b Merkle tree and anchors roots on-chain via shielded memos. Any Zcash-native operator can use it.
+
+3 mainnet anchors. 12 leaves. 60+ tests. 9 binaries. MIT licensed.
+
+[ZIP draft PR #1243](https://github.com/zcash/zips/pull/1243) | [EVALUATOR_QUICKSTART](EVALUATOR_QUICKSTART.md) | [crates.io](https://crates.io/crates/zap1-verify) | [zcash-memo-decode](https://crates.io/crates/zcash-memo-decode)
+
+## Verify in one command
+
+```bash
+git clone https://github.com/Frontier-Compute/zap1.git && cd zap1 && bash scripts/evaluate.sh
+```
 
 ## What it does
 
-- **Payment receiver**: Creates unique Orchard shielded addresses per invoice. Detects payments via trial decryption against a Zebra full node. ZIP-321 QR codes. Signal notifications.
-- **On-chain attestation**: Every program entry and hardware assignment is committed to a BLAKE2b Merkle tree. The root is periodically anchored on Zcash via a shielded memo transaction. Anyone can verify ownership without trusting the operator.
-- **Verification**: `/verify/{leaf_hash}` renders a proof page showing the Merkle proof path, root, anchor txid, and block height. An independent Python verifier (`verify_proof.py`) can recompute and confirm proofs offline.
+- **Structured attestation**: typed lifecycle events (entry, ownership, deployment, payment, transfer, exit) committed to a BLAKE2b Merkle tree with configurable domain separation
+- **Shielded anchoring**: Merkle roots broadcast to Zcash mainnet via Orchard shielded memos. Proofs are publicly verifiable, event data stays private.
+- **Verification**: standalone SDK on [crates.io](https://crates.io/crates/zap1-verify), browser verifier, offline audit tools. No server trust required.
+- **Ecosystem tooling**: universal [memo decoder](https://crates.io/crates/zcash-memo-decode), [ZIP 302 TVLV reference](src/bin/zip302_tvlv.rs), Zaino compact block [adapter](src/bin/zaino_adapter.rs), [selective disclosure export](src/bin/zap1_export.rs)
+
+Nordic Shield is the first production deployment. The protocol is application-agnostic.
 
 ## Protocol
 
