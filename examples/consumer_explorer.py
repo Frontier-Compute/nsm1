@@ -37,14 +37,15 @@ def main():
         if event.get("serial_number"):
             print(f"  {'':20s} serial={event['serial_number']}")
 
-    # verify one proof to show the explorer can validate
+    # fetch one proof bundle to show the data path
     if events:
         leaf = events[0]["leaf_hash"]
         proof = fetch_proof(leaf)
-        print(f"\nproof for {leaf[:16]}:")
+        print(f"\nproof bundle for {leaf[:16]}:")
         print(f"  root: {proof['root']['hash'][:16]}...")
         print(f"  anchor: block {proof['anchor'].get('height', 'unknown')}")
         print(f"  steps: {len(proof['proof'])}")
+        print(f"  (cryptographic verification: use zap1_audit --bundle)")
 
 
 if __name__ == "__main__":

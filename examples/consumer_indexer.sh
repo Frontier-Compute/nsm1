@@ -2,7 +2,7 @@
 # Indexer consumer example.
 #
 # Shows how an indexer (Zaino-backed or standalone) ingests ZAP1 data.
-# Fetches events, verifies each proof, exports an audit package.
+# Fetches events, verifies a proof via API, demonstrates the polling pattern.
 
 set -euo pipefail
 

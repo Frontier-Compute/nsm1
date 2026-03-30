@@ -58,7 +58,7 @@ def main():
         print("wallet UI: no memo content")
 
     else:
-        print(f"wallet UI: unknown format (0x{result.get('first_byte', '??')})")
+        print(f"wallet UI: unknown format ({result.get('first_byte', '??')})")
 
 
 if __name__ == "__main__":
