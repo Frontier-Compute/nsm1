@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Nordic Shield Independent Verifier
+ZAP1 Independent Verifier
 ===================================
 Verify a Merkle inclusion proof without trusting the operator's server.
 
@@ -139,7 +139,7 @@ def compute_leaf(args) -> tuple:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Nordic Shield Merkle Proof Verifier (all 9 ZAP1 event types)")
+    parser = argparse.ArgumentParser(description="ZAP1 Merkle Proof Verifier (all 9 event types)")
     parser.add_argument("--leaf-hash", help="Hex-encoded leaf hash (if known)")
     parser.add_argument("--event-type", help="Event type: PROGRAM_ENTRY, OWNERSHIP_ATTEST, CONTRACT_ANCHOR, DEPLOYMENT, HOSTING_PAYMENT, SHIELD_RENEWAL, TRANSFER, EXIT")
     parser.add_argument("--wallet-hash", help="Wallet hash string")

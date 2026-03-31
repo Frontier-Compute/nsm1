@@ -1,8 +1,8 @@
 # verify-widget
 
-Zero-trust in-browser Merkle proof verifier for the Nordic Shield on-chain protocol (ZAP1).
+Zero-trust in-browser Merkle proof verifier for the ZAP1 attestation protocol on Zcash.
 
-All verification runs client-side. No server involved. BLAKE2b-256 with Nordic Shield personalizations, Merkle path walking, and root comparison - entirely in the browser.
+All verification runs client-side. No server involved. BLAKE2b-256 with ZAP1 personalizations, Merkle path walking, and root comparison - entirely in the browser.
 
 ## Files
 

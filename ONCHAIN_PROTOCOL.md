@@ -6,9 +6,9 @@
 
 ## 1. Overview
 
-Nordic Shield uses the Zcash blockchain as the source of truth for program operations. Every significant program event is represented as a structured memo commitment and aggregated into a BLAKE2b Merkle tree whose root is periodically anchored to Zcash. Participants verify ownership, deployment, hosting history, renewal history, transfer history, and exit history from the chain record plus Merkle proofs, with no trust required in a private operator database.
+ZAP1 uses the Zcash blockchain as the source of truth for attestation operations. Every significant event is represented as a structured memo commitment and aggregated into a BLAKE2b Merkle tree whose root is periodically anchored to Zcash. Participants verify ownership, deployment, hosting history, renewal history, transfer history, and exit history from the chain record plus Merkle proofs, with no trust required in a private operator database. Nordic Shield is the first production deployment of this protocol.
 
-This protocol is the open technical layer beneath the Nordic Shield commercial program. It is implemented through the ZAP1 reference implementation, related verifier tooling, and the operating procedures described here. No participant PII is recorded on-chain; only wallet hashes, serial hashes, and derived payload hashes are used.
+ZAP1 is the open attestation protocol layer, implemented through the reference tooling and operating procedures described here. No participant PII is recorded on-chain; only wallet hashes, serial hashes, and derived payload hashes are used.
 
 Mainnet proof reference:
 
@@ -192,7 +192,7 @@ The old and new wallet hashes are the only ownership identifiers used in the on-
 
 ## 9. Wyoming DAO LLC Compliance
 
-Section VI of the LiquidLV DAO LLC articles of organization requires a public smart contract identifier. LiquidLV DAO LLC uses the Zcash anchor address for the Nordic Shield protocol as that identifier.
+Section VI of the LiquidLV DAO LLC articles of organization requires a public smart contract identifier. LiquidLV DAO LLC uses the Zcash anchor address for the ZAP1 protocol as that identifier.
 
 Compliance mapping:
 
@@ -206,7 +206,7 @@ For Wyoming filing purposes, the protocol is the DAO's audit and commitment laye
 ## 10. Security Considerations
 
 - no participant PII is written to the chain
-- BLAKE2b personalization separates Nordic Shield hashes from other protocol contexts
+- BLAKE2b personalization separates ZAP1 hashes from other protocol contexts
 - Merkle proofs are non-interactive and independently checkable
 - shielded memos limit public disclosure while still allowing controlled verification
 - anchor transactions are low-value self-commits, minimizing cost

@@ -1,7 +1,7 @@
 {
   "name": "@frontier-compute/verify-widget",
   "version": "1.0.0",
-  "description": "Zero-trust in-browser Merkle proof verifier for the Nordic Shield on-chain protocol (ZAP1)",
+  "description": "Zero-trust in-browser Merkle proof verifier for the ZAP1 attestation protocol on Zcash",
   "type": "module",
   "main": "blake2b.js",
   "exports": {

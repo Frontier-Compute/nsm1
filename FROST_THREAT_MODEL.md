@@ -2,7 +2,7 @@
 
 Date: 2026-03-28
 Status: Design package and migration plan
-Applies to: Nordic Shield ZAP1 anchor signing
+Applies to: ZAP1 anchor signing
 
 ## 1. Scope
 
