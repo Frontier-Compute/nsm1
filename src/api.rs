@@ -1707,11 +1707,29 @@ async fn memo_decode_endpoint(
     Ok(Json(result))
 }
 
+#[derive(Deserialize, Default)]
+struct AdminQuery {
+    key: Option<String>,
+}
+
 async fn admin_anchor_qr(
     State(state): State<AppState>,
     headers: HeaderMap,
+    Query(q): Query<AdminQuery>,
 ) -> Result<Html<String>, (StatusCode, String)> {
-    check_api_key(&state.config, &headers)?;
+    // Accept key via header OR query param for browser access
+    if let Some(expected) = &state.config.api_key {
+        let header_ok = headers
+            .get("authorization")
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.strip_prefix("Bearer "))
+            .map(|k| k == expected)
+            .unwrap_or(false);
+        let query_ok = q.key.as_deref().map(|k| k == expected).unwrap_or(false);
+        if !header_ok && !query_ok {
+            return Err((StatusCode::UNAUTHORIZED, "Invalid or missing API key".into()));
+        }
+    }
 
     let root = state
         .db
