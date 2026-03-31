@@ -69,32 +69,6 @@ docker compose -f docker-compose.mainnet.yml build
 docker compose -f docker-compose.mainnet.yml up -d
 ```
 
-## API
-
-| Method | Route | Auth | Description |
-|--------|-------|------|-------------|
-| POST | /invoice | Bearer | Create payment invoice |
-| GET | /pay/{id} |  - | Payment page with QR |
-| GET | /invoice/{id} |  - | Invoice status JSON |
-| GET | /invoices |  - | List invoices with optional status filtering |
-| POST | /assign | Bearer | Assign serial to wallet |
-| POST | /event | Bearer | Create lifecycle event leaf |
-| GET | /miner/{wallet_hash} |  - | Miner dashboard |
-| GET | /miner/{wallet_hash}/status |  - | Machine status JSON for the miner dashboard |
-| GET | /miner/{wallet_hash}/verify |  - | Viewing-key and verification metadata for the miner |
-| GET | /verify/{leaf_hash} |  - | Ownership proof page |
-| GET | /verify/{leaf_hash}/check |  - | Proof-check endpoint for programmatic verification |
-| GET | /verify/{leaf_hash}/proof.json |  - | Downloadable proof bundle JSON |
-| GET | /lifecycle/{wallet_hash} |  - | Participant lifecycle JSON |
-| GET | /stats |  - | Aggregate lifecycle and anchor stats |
-| GET | /health |  - | Scanner health JSON |
-| GET | /anchor/status |  - | Current anchor scheduler and pending-root status |
-| GET | /anchor/history |  - | Historical root anchors and transaction references |
-| GET | /protocol/info |  - | ZAP1 protocol metadata, event types, and versioning |
-| POST | /auto-invoice | Bearer | Create or deduplicate recurring billing invoices |
-| GET | /cohort |  - | Cohort-level revenue and participant metrics |
-| GET | /admin/overview |  - | Aggregated admin dashboard data |
-
 ## Independent verification
 
 ```bash
@@ -138,7 +112,7 @@ Offline verify: `zap1_audit --export package.json`
 
 Consumer examples in `examples/`: wallet (Python), explorer (Python), indexer (bash).
 
-## API
+## Public read API
 
 | Endpoint | Method | Purpose |
 |---|---|---|
