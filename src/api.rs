@@ -941,11 +941,24 @@ async fn recent_events(
             serde_json::json!({
                 "leaf_hash": l.leaf_hash,
                 "event_type": l.event_type.label(),
+                "description": match l.event_type.label() {
+                    "PROGRAM_ENTRY" => "Operator registration",
+                    "OWNERSHIP_ATTEST" => "Ownership attestation",
+                    "CONTRACT_ANCHOR" => "Contract hash anchored",
+                    "DEPLOYMENT" => "Hardware deployment",
+                    "HOSTING_PAYMENT" => "Hosting payment recorded",
+                    "SHIELD_RENEWAL" => "Shield renewed",
+                    "TRANSFER" => "Ownership transferred",
+                    "EXIT" => "Hardware decommissioned",
+                    "MERKLE_ROOT" => "Merkle root anchor",
+                    _ => "Unknown event",
+                },
                 "wallet_hash": l.wallet_hash,
                 "serial_number": l.serial_number,
                 "created_at": l.created_at,
                 "verify_url": format!("/verify/{}", l.leaf_hash),
                 "proof_url": format!("/verify/{}/proof.json", l.leaf_hash),
+                "badge_url": format!("/badge/leaf/{}", l.leaf_hash),
             })
         })
         .collect();
