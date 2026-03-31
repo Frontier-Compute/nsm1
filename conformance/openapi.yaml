@@ -1,0 +1,373 @@
+openapi: 3.0.3
+info:
+  title: ZAP1 Attestation Protocol
+  description: Read-only API for Zcash on-chain attestation discovery, verification, and memo classification.
+  version: "2.2.0"
+  license:
+    name: MIT
+    url: https://github.com/Frontier-Compute/zap1/blob/main/LICENSE
+  contact:
+    name: zk_nd3r
+    url: https://github.com/Frontier-Compute/zap1
+
+servers:
+  - url: https://pay.frontiercompute.io
+    description: Reference deployment on Zcash mainnet
+
+paths:
+  /protocol/info:
+    get:
+      summary: Protocol metadata
+      operationId: getProtocolInfo
+      responses:
+        "200":
+          description: Protocol version, event types, hash function, and FROST status
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [protocol, version, event_types, deployed_types, hash_function]
+                properties:
+                  protocol:
+                    type: string
+                    example: ZAP1
+                  version:
+                    type: string
+                    example: "2.2.0"
+                  event_types:
+                    type: integer
+                    example: 12
+                  deployed_types:
+                    type: integer
+                    example: 9
+                  reserved_types:
+                    type: integer
+                    example: 3
+                  hash_function:
+                    type: string
+                    example: BLAKE2b-256
+                  leaf_personalization:
+                    type: string
+                    example: "NordicShield_"
+                  node_personalization:
+                    type: string
+                    example: "NordicShield_MRK"
+
+  /stats:
+    get:
+      summary: Anchor and leaf counts
+      operationId: getStats
+      responses:
+        "200":
+          description: Current protocol statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [total_anchors, total_leaves]
+                properties:
+                  total_anchors:
+                    type: integer
+                  total_leaves:
+                    type: integer
+                  first_anchor_block:
+                    type: integer
+                    nullable: true
+                  last_anchor_block:
+                    type: integer
+                    nullable: true
+
+  /health:
+    get:
+      summary: Scanner and node health
+      operationId: getHealth
+      responses:
+        "200":
+          description: Operational status of the scanner and node backend
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [last_scanned_height, chain_tip, sync_lag, scanner_operational, rpc_reachable]
+                properties:
+                  last_scanned_height:
+                    type: integer
+                  chain_tip:
+                    type: integer
+                  sync_lag:
+                    type: integer
+                  pending_invoices:
+                    type: integer
+                  scanner_operational:
+                    type: boolean
+                  network:
+                    type: string
+                  rpc_reachable:
+                    type: boolean
+
+  /events:
+    get:
+      summary: Recent attestation events
+      operationId: getEvents
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        "200":
+          description: Discoverable feed of attestation events
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [protocol, total_returned, events]
+                properties:
+                  protocol:
+                    type: string
+                    example: ZAP1
+                  total_returned:
+                    type: integer
+                  events:
+                    type: array
+                    items:
+                      type: object
+                      required: [leaf_hash, event_type, wallet_hash, verify_url, proof_url]
+                      properties:
+                        leaf_hash:
+                          type: string
+                          minLength: 64
+                          maxLength: 64
+                        event_type:
+                          type: string
+                          example: PROGRAM_ENTRY
+                        wallet_hash:
+                          type: string
+                        serial_number:
+                          type: string
+                          nullable: true
+                        created_at:
+                          type: string
+                        verify_url:
+                          type: string
+                        proof_url:
+                          type: string
+
+  /anchor/history:
+    get:
+      summary: All anchored Merkle roots
+      operationId: getAnchorHistory
+      responses:
+        "200":
+          description: Chronological list of on-chain anchor commitments
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [anchors, total]
+                properties:
+                  anchors:
+                    type: array
+                    items:
+                      type: object
+                      required: [root, leaf_count]
+                      properties:
+                        created_at:
+                          type: string
+                        height:
+                          type: integer
+                          nullable: true
+                        leaf_count:
+                          type: integer
+                        root:
+                          type: string
+                          minLength: 64
+                        txid:
+                          type: string
+                          nullable: true
+                  last_anchor_age_hours:
+                    type: integer
+                    nullable: true
+                  total:
+                    type: integer
+
+  /anchor/status:
+    get:
+      summary: Current tree state
+      operationId: getAnchorStatus
+      responses:
+        "200":
+          description: Current Merkle root, leaf count, and anchor recommendation
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [current_root, leaf_count, unanchored_leaves, needs_anchor]
+                properties:
+                  current_root:
+                    type: string
+                  leaf_count:
+                    type: integer
+                  unanchored_leaves:
+                    type: integer
+                  last_anchor_txid:
+                    type: string
+                    nullable: true
+                  last_anchor_height:
+                    type: integer
+                    nullable: true
+                  needs_anchor:
+                    type: boolean
+                  recommendation:
+                    type: string
+
+  /verify/{leaf_hash}/check:
+    get:
+      summary: Server-side proof verification
+      operationId: verifyCheck
+      parameters:
+        - name: leaf_hash
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [protocol, valid, leaf_hash, root]
+                properties:
+                  protocol:
+                    type: string
+                    example: ZAP1
+                  valid:
+                    type: boolean
+                  leaf_hash:
+                    type: string
+                  event_type:
+                    type: string
+                  root:
+                    type: string
+                  server_verified:
+                    type: boolean
+                  verification_sdk:
+                    type: string
+        "404":
+          description: Leaf not found
+
+  /verify/{leaf_hash}/proof.json:
+    get:
+      summary: Downloadable proof bundle
+      operationId: getProofBundle
+      parameters:
+        - name: leaf_hash
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Proof bundle with Merkle path and anchor data
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [protocol, version, leaf, proof, root, anchor]
+                properties:
+                  protocol:
+                    type: string
+                  version:
+                    type: string
+                  leaf:
+                    type: object
+                    properties:
+                      hash:
+                        type: string
+                      event_type:
+                        type: string
+                      wallet_hash:
+                        type: string
+                      serial_number:
+                        type: string
+                        nullable: true
+                      created_at:
+                        type: string
+                  proof:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        hash:
+                          type: string
+                        position:
+                          type: string
+                          enum: [left, right]
+                  root:
+                    type: object
+                    properties:
+                      hash:
+                        type: string
+                      leaf_count:
+                        type: integer
+                      created_at:
+                        type: string
+                  anchor:
+                    type: object
+                    properties:
+                      txid:
+                        type: string
+                        nullable: true
+                      height:
+                        type: integer
+                        nullable: true
+
+  /memo/decode:
+    post:
+      summary: Universal memo classifier
+      operationId: decodeMemo
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+              description: hex-encoded memo bytes
+      responses:
+        "200":
+          description: Classified memo format with parsed content
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [format]
+                properties:
+                  format:
+                    type: string
+                    enum: [text, zap1, nsm1, zip302, empty, binary, unknown]
+                  text:
+                    type: string
+                  protocol:
+                    type: string
+                  event_type:
+                    type: string
+                  event_label:
+                    type: string
+                  payload_hash:
+                    type: string
+                  raw:
+                    type: string
+                  parts:
+                    type: array
+                  hex:
+                    type: string
+                  length:
+                    type: integer
+                  first_byte:
+                    type: string
+        "400":
+          description: Invalid hex input
