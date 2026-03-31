@@ -89,6 +89,7 @@ pub fn router(state: AppState) -> Router {
         .route("/protocol/info", get(protocol_info))
         .route("/badge/status.svg", get(badge_status))
         .route("/badge/leaf/{leaf_hash}", get(badge_leaf))
+        .route("/badge/anchor/{txid_prefix}", get(badge_anchor))
         .route("/build/info", get(build_info))
         .route("/events", get(recent_events))
         .route("/memo/decode", post(memo_decode_endpoint))
@@ -1079,6 +1080,60 @@ async fn badge_leaf(
     };
 
     let svg = svg_badge("ZAP1 leaf", value, color);
+
+    (
+        StatusCode::OK,
+        [
+            (axum::http::header::CONTENT_TYPE, "image/svg+xml"),
+            (axum::http::header::CACHE_CONTROL, "max-age=300"),
+        ],
+        svg,
+    )
+}
+
+/// Dynamic SVG badge for a specific anchor, looked up by txid prefix.
+async fn badge_anchor(
+    State(state): State<AppState>,
+    Path(txid_prefix): Path<String>,
+) -> (
+    StatusCode,
+    [(axum::http::header::HeaderName, &'static str); 2],
+    String,
+) {
+    let prefix = txid_prefix.to_lowercase();
+    if prefix.len() < 8 || prefix.len() > 16 || !prefix.chars().all(|c| c.is_ascii_hexdigit()) {
+        let svg = svg_badge("ZAP1", "invalid prefix", "#e05d44");
+        return (
+            StatusCode::BAD_REQUEST,
+            [
+                (axum::http::header::CONTENT_TYPE, "image/svg+xml"),
+                (axum::http::header::CACHE_CONTROL, "no-cache"),
+            ],
+            svg,
+        );
+    }
+
+    let found = state
+        .db
+        .all_anchored_roots()
+        .unwrap_or_default()
+        .into_iter()
+        .find(|r| {
+            r.anchor_txid
+                .as_deref()
+                .map(|t| t.starts_with(&prefix))
+                .unwrap_or(false)
+        });
+
+    let (value, color) = match found {
+        Some(r) => match r.anchor_height {
+            Some(h) => (format!("anchored at block {}", h), "#4c1".to_string()),
+            None => ("anchored (unconfirmed)".to_string(), "#c8a84e".to_string()),
+        },
+        None => ("anchor not found".to_string(), "#e05d44".to_string()),
+    };
+
+    let svg = svg_badge("ZAP1", &value, &color);
 
     (
         StatusCode::OK,
