@@ -95,6 +95,22 @@
       "properties": {
         "format": { "type": "string", "enum": ["text", "zap1", "nsm1", "zip302", "empty", "binary", "unknown"] }
       }
+    },
+    "/build/info": {
+      "required": ["version"],
+      "properties": {
+        "version": { "type": "string" },
+        "build_metadata": { "type": "string" },
+        "librustzcash_rev": { "type": "string" }
+      }
+    },
+    "/admin/anchor/qr": {
+      "description": "Returns HTML page with QR code. Requires API key auth.",
+      "content_type": "text/html"
+    },
+    "/admin/anchor/record": {
+      "description": "POST-only endpoint to record an anchor. Requires API key auth.",
+      "method": "POST"
     }
   }
 }

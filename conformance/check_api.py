@@ -8,6 +8,7 @@ Validate live ZAP1 API responses against the schema contract.
 import json
 import os
 import sys
+import urllib.error
 import urllib.request
 
 DIR = os.path.dirname(os.path.abspath(__file__))
@@ -27,13 +28,29 @@ def check(label, ok, detail=""):
         failed += 1
 
 
-def fetch(path):
+API_KEY = "Blqr7I45XS-VHJDTDa_v7WBgWgqlpIYlQj4asaP-Y-g"
+
+
+def fetch(path, headers=None):
     url = f"{BASE}{path}"
     try:
-        with urllib.request.urlopen(url, timeout=10) as resp:
+        req = urllib.request.Request(url, headers=headers or {})
+        with urllib.request.urlopen(req, timeout=10) as resp:
             return json.load(resp)
     except Exception as e:
         return None
+
+
+def fetch_raw(path, headers=None, method="GET"):
+    url = f"{BASE}{path}"
+    try:
+        req = urllib.request.Request(url, headers=headers or {}, method=method)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return resp.status, resp.read().decode(), resp.headers.get("Content-Type", "")
+    except urllib.error.HTTPError as e:
+        return e.code, "", ""
+    except Exception as e:
+        return 0, "", ""
 
 
 def validate_required(data, schema, path):
@@ -74,6 +91,13 @@ def main():
     if validate_required(data, schemas["/protocol/info"], "/protocol/info"):
         check("/protocol/info protocol=ZAP1", data.get("protocol") == "ZAP1")
         check("/protocol/info hash=BLAKE2b-256", data.get("hash_function") == "BLAKE2b-256")
+        check("/protocol/info version=3.0.0-draft", data.get("version") == "3.0.0-draft")
+
+    # /build/info
+    build_data = fetch("/build/info")
+    check("/build/info returns valid JSON", build_data is not None)
+    if build_data:
+        check("/build/info has version", "version" in build_data)
 
     # /stats
     data = fetch("/stats")
@@ -122,6 +146,22 @@ def main():
         check("/memo/decode format=zap1", data.get("format") == "zap1")
     except Exception as e:
         check("/memo/decode", False, str(e))
+
+    # /admin/anchor/qr (requires auth, returns HTML)
+    status, body, ctype = fetch_raw("/admin/anchor/qr")
+    check("/admin/anchor/qr rejects without auth", status == 401)
+
+    status, body, ctype = fetch_raw(
+        "/admin/anchor/qr",
+        headers={"Authorization": f"Bearer {API_KEY}"},
+    )
+    check("/admin/anchor/qr returns 200 with auth", status == 200)
+    check("/admin/anchor/qr content-type is HTML", "text/html" in ctype)
+    check("/admin/anchor/qr body contains HTML", "<html" in body.lower())
+
+    # /admin/anchor/record (POST-only, requires auth)
+    status, _, _ = fetch_raw("/admin/anchor/record")
+    check("/admin/anchor/record rejects GET", status in (401, 405))
 
     print()
     print(f"{passed} pass, {failed} fail")
