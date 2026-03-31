@@ -1,0 +1,27 @@
+{
+  "anchor": {
+    "height": 3286631,
+    "txid": "98e1d6a01614c464c237f982d9dc2138c5f8aa08342f67b867a18a4ce998af9a"
+  },
+  "leaf": {
+    "created_at": "2026-03-27T03:29:26.266798995+00:00",
+    "event_type": "OWNERSHIP_ATTEST",
+    "hash": "de62554ad3867a59895befa7216686c923fc86245231e8fb6bd709a20e1fd133",
+    "serial_number": "Z15P-E2E-001",
+    "wallet_hash": "e2e_wallet_20260327"
+  },
+  "proof": [
+    {
+      "hash": "075b00df286038a7b3f6bb70054df61343e3481fba579591354a00214e9e019b",
+      "position": "left"
+    }
+  ],
+  "protocol": "ZAP1",
+  "root": {
+    "created_at": "2026-03-27T03:29:26.270894724+00:00",
+    "hash": "024e36515ea30efc15a0a7962dd8f677455938079430b9eab174f46a4328a07a",
+    "leaf_count": 2
+  },
+  "verify_command": "python3 verify_proof.py --wallet-hash e2e_wallet_20260327 --serial Z15P-E2E-001 --proof proof.json --root 024e36515ea30efc15a0a7962dd8f677455938079430b9eab174f46a4328a07a",
+  "version": "1.0.0"
+}

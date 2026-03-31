@@ -1,0 +1,40 @@
+{
+  "description": "Memo wire format encode/decode vectors",
+  "vectors": [
+    {
+      "description": "ZAP1 PROGRAM_ENTRY memo",
+      "raw": "ZAP1:01:075b00df286038a7b3f6bb70054df61343e3481fba579591354a00214e9e019b",
+      "expected_format": "zap1",
+      "expected_type": "0x01",
+      "expected_label": "PROGRAM_ENTRY"
+    },
+    {
+      "description": "legacy NSM1 memo (backward compatible)",
+      "raw": "NSM1:02:de62554ad3867a59895befa7216686c923fc86245231e8fb6bd709a20e1fd133",
+      "expected_format": "nsm1",
+      "expected_type": "0x02",
+      "expected_label": "OWNERSHIP_ATTEST"
+    },
+    {
+      "description": "plain text memo",
+      "hex": "68656c6c6f207a63617368",
+      "expected_format": "text",
+      "expected_text": "hello zcash"
+    },
+    {
+      "description": "empty memo (0xF6)",
+      "hex": "f600000000",
+      "expected_format": "empty"
+    },
+    {
+      "description": "binary memo (0xFF prefix)",
+      "hex": "ff01020304",
+      "expected_format": "binary"
+    },
+    {
+      "description": "malformed ZAP1 (too short hash) falls back to text",
+      "raw": "ZAP1:01:tooshort",
+      "expected_format": "text"
+    }
+  ]
+}

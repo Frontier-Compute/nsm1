@@ -1,0 +1,27 @@
+{
+  "description": "Merkle tree construction vectors. NordicShield_MRK personalization for internal nodes.",
+  "node_personalization": "NordicShield_MRK",
+  "hash_function": "BLAKE2b-256",
+  "vectors": [
+    {
+      "description": "single leaf tree - root equals leaf",
+      "leaves": [
+        "075b00df286038a7b3f6bb70054df61343e3481fba579591354a00214e9e019b"
+      ],
+      "expected_root": "075b00df286038a7b3f6bb70054df61343e3481fba579591354a00214e9e019b"
+    },
+    {
+      "description": "two-leaf tree from mainnet anchor at block 3,286,631",
+      "leaves": [
+        "075b00df286038a7b3f6bb70054df61343e3481fba579591354a00214e9e019b",
+        "de62554ad3867a59895befa7216686c923fc86245231e8fb6bd709a20e1fd133"
+      ],
+      "expected_root": "024e36515ea30efc15a0a7962dd8f677455938079430b9eab174f46a4328a07a"
+    },
+    {
+      "description": "empty tree",
+      "leaves": [],
+      "expected_root": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ]
+}
