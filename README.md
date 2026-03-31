@@ -154,6 +154,21 @@ Consumer examples in `examples/`: wallet (Python), explorer (Python), indexer (b
 | /memo/decode | POST | universal memo classifier |
 | /lifecycle/{wallet_hash} | GET | events for a wallet |
 
+Interactive docs: [frontiercompute.io/api.html](https://frontiercompute.io/api.html)
+OpenAPI spec: [conformance/openapi.yaml](conformance/openapi.yaml)
+Reference clients: [Python](conformance/clients/zap1_client.py) | [TypeScript](conformance/clients/zap1_client.ts)
+
+## Conformance
+
+```bash
+python3 conformance/check.py        # 14 protocol checks
+python3 conformance/check_api.py     # 21 API schema checks
+python3 scripts/check_compatibility.py  # 6 hash vectors
+bash scripts/evaluate.sh             # 14 end-to-end checks
+```
+
+See [conformance/](conformance/) for fixtures, schemas, versioning policy, and consumer contracts.
+
 ## Ecosystem
 
 - **Verification SDK (Rust + WASM):** [Frontier-Compute/zap1-verify](https://github.com/Frontier-Compute/zap1-verify) - 22 tests
