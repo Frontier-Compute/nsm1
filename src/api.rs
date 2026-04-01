@@ -954,6 +954,9 @@ async fn recent_events(
                     "STAKING_DEPOSIT" => "Staking deposit",
                     "STAKING_WITHDRAW" => "Staking withdrawal",
                     "STAKING_REWARD" => "Staking reward",
+                    "GOVERNANCE_PROPOSAL" => "Governance proposal",
+                    "GOVERNANCE_VOTE" => "Governance vote",
+                    "GOVERNANCE_RESULT" => "Governance result",
                     _ => "Unknown event",
                 },
                 "wallet_hash": l.wallet_hash,
@@ -978,8 +981,8 @@ async fn protocol_info() -> Json<serde_json::Value> {
     Json(serde_json::json!({
         "protocol": "ZAP1",
         "version": "3.0.0-draft",
-        "event_types": 12,
-        "deployed_types": 12,
+        "event_types": 15,
+        "deployed_types": 15,
         "reserved_types": 0,
         "hash_function": "BLAKE2b-256",
         "leaf_personalization": "NordicShield_",
@@ -1257,6 +1260,10 @@ struct CreateEventRequest {
     amount_zat: Option<u64>,
     validator_id: Option<String>,
     epoch: Option<u32>,
+    proposal_id: Option<String>,
+    proposal_hash: Option<String>,
+    vote_commitment: Option<String>,
+    result_hash: Option<String>,
 }
 
 async fn create_lifecycle_event(
@@ -1270,76 +1277,160 @@ async fn create_lifecycle_event(
 
     let (leaf, root) = match req.event_type.as_str() {
         "CONTRACT_ANCHOR" => {
-            let serial = req.serial_number.as_deref()
+            let serial = req
+                .serial_number
+                .as_deref()
                 .ok_or((StatusCode::BAD_REQUEST, "serial_number required".into()))?;
-            let sha = req.contract_sha256.as_deref()
+            let sha = req
+                .contract_sha256
+                .as_deref()
                 .ok_or((StatusCode::BAD_REQUEST, "contract_sha256 required".into()))?;
-            state.db.insert_contract_anchor_leaf(&req.wallet_hash, serial, sha)
+            state
+                .db
+                .insert_contract_anchor_leaf(&req.wallet_hash, serial, sha)
         }
         "DEPLOYMENT" => {
-            let serial = req.serial_number.as_deref()
+            let serial = req
+                .serial_number
+                .as_deref()
                 .ok_or((StatusCode::BAD_REQUEST, "serial_number required".into()))?;
-            let facility = req.facility_id.as_deref()
+            let facility = req
+                .facility_id
+                .as_deref()
                 .ok_or((StatusCode::BAD_REQUEST, "facility_id required".into()))?;
-            state.db.insert_deployment_leaf(&req.wallet_hash, serial, facility, now_ts)
+            state
+                .db
+                .insert_deployment_leaf(&req.wallet_hash, serial, facility, now_ts)
         }
         "HOSTING_PAYMENT" => {
-            let serial = req.serial_number.as_deref()
+            let serial = req
+                .serial_number
+                .as_deref()
                 .ok_or((StatusCode::BAD_REQUEST, "serial_number required".into()))?;
-            let month = req.month
+            let month = req
+                .month
                 .ok_or((StatusCode::BAD_REQUEST, "month required".into()))?;
             if !(1..=12).contains(&month) {
                 return Err((StatusCode::BAD_REQUEST, "month must be 1-12".into()));
             }
-            let year = req.year
+            let year = req
+                .year
                 .ok_or((StatusCode::BAD_REQUEST, "year required".into()))?;
             if !(2020..=2100).contains(&year) {
                 return Err((StatusCode::BAD_REQUEST, "year must be 2020-2100".into()));
             }
-            state.db.insert_hosting_payment_leaf(&req.wallet_hash, serial, month, year)
+            state
+                .db
+                .insert_hosting_payment_leaf(&req.wallet_hash, serial, month, year)
         }
         "SHIELD_RENEWAL" => {
-            let year = req.year
+            let year = req
+                .year
                 .ok_or((StatusCode::BAD_REQUEST, "year required".into()))?;
             state.db.insert_shield_renewal_leaf(&req.wallet_hash, year)
         }
         "TRANSFER" => {
-            let serial = req.serial_number.as_deref()
+            let serial = req
+                .serial_number
+                .as_deref()
                 .ok_or((StatusCode::BAD_REQUEST, "serial_number required".into()))?;
-            let new_wallet = req.new_wallet_hash.as_deref()
+            let new_wallet = req
+                .new_wallet_hash
+                .as_deref()
                 .ok_or((StatusCode::BAD_REQUEST, "new_wallet_hash required".into()))?;
-            state.db.insert_transfer_leaf(&req.wallet_hash, new_wallet, serial)
+            state
+                .db
+                .insert_transfer_leaf(&req.wallet_hash, new_wallet, serial)
         }
         "EXIT" => {
-            let serial = req.serial_number.as_deref()
+            let serial = req
+                .serial_number
+                .as_deref()
                 .ok_or((StatusCode::BAD_REQUEST, "serial_number required".into()))?;
             state.db.insert_exit_leaf(&req.wallet_hash, serial, now_ts)
         }
         "STAKING_DEPOSIT" => {
-            let amount = req.amount_zat
+            let amount = req
+                .amount_zat
                 .ok_or((StatusCode::BAD_REQUEST, "amount_zat required".into()))?;
-            let validator = req.validator_id.as_deref()
+            let validator = req
+                .validator_id
+                .as_deref()
                 .ok_or((StatusCode::BAD_REQUEST, "validator_id required".into()))?;
-            state.db.insert_staking_deposit_leaf(&req.wallet_hash, amount, validator)
+            state
+                .db
+                .insert_staking_deposit_leaf(&req.wallet_hash, amount, validator)
         }
         "STAKING_WITHDRAW" => {
-            let amount = req.amount_zat
+            let amount = req
+                .amount_zat
                 .ok_or((StatusCode::BAD_REQUEST, "amount_zat required".into()))?;
-            let validator = req.validator_id.as_deref()
+            let validator = req
+                .validator_id
+                .as_deref()
                 .ok_or((StatusCode::BAD_REQUEST, "validator_id required".into()))?;
-            state.db.insert_staking_withdraw_leaf(&req.wallet_hash, amount, validator)
+            state
+                .db
+                .insert_staking_withdraw_leaf(&req.wallet_hash, amount, validator)
         }
         "STAKING_REWARD" => {
-            let amount = req.amount_zat
+            let amount = req
+                .amount_zat
                 .ok_or((StatusCode::BAD_REQUEST, "amount_zat required".into()))?;
-            let epoch = req.epoch
+            let epoch = req
+                .epoch
                 .ok_or((StatusCode::BAD_REQUEST, "epoch required".into()))?;
-            state.db.insert_staking_reward_leaf(&req.wallet_hash, amount, epoch)
+            state
+                .db
+                .insert_staking_reward_leaf(&req.wallet_hash, amount, epoch)
+        }
+        "GOVERNANCE_PROPOSAL" => {
+            let pid = req
+                .proposal_id
+                .as_deref()
+                .ok_or((StatusCode::BAD_REQUEST, "proposal_id required".into()))?;
+            let phash = req
+                .proposal_hash
+                .as_deref()
+                .ok_or((StatusCode::BAD_REQUEST, "proposal_hash required".into()))?;
+            state
+                .db
+                .insert_governance_proposal_leaf(&req.wallet_hash, pid, phash)
+        }
+        "GOVERNANCE_VOTE" => {
+            let pid = req
+                .proposal_id
+                .as_deref()
+                .ok_or((StatusCode::BAD_REQUEST, "proposal_id required".into()))?;
+            let vc = req
+                .vote_commitment
+                .as_deref()
+                .ok_or((StatusCode::BAD_REQUEST, "vote_commitment required".into()))?;
+            state
+                .db
+                .insert_governance_vote_leaf(&req.wallet_hash, pid, vc)
+        }
+        "GOVERNANCE_RESULT" => {
+            let pid = req
+                .proposal_id
+                .as_deref()
+                .ok_or((StatusCode::BAD_REQUEST, "proposal_id required".into()))?;
+            let rh = req
+                .result_hash
+                .as_deref()
+                .ok_or((StatusCode::BAD_REQUEST, "result_hash required".into()))?;
+            state
+                .db
+                .insert_governance_result_leaf(&req.wallet_hash, pid, rh)
         }
         other => {
-            return Err((StatusCode::BAD_REQUEST, format!("unsupported event_type: {other}. Use: CONTRACT_ANCHOR, DEPLOYMENT, HOSTING_PAYMENT, SHIELD_RENEWAL, TRANSFER, EXIT, STAKING_DEPOSIT, STAKING_WITHDRAW, STAKING_REWARD")));
+            return Err((
+                StatusCode::BAD_REQUEST,
+                format!("unsupported event_type: {other}"),
+            ));
         }
-    }.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    }
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     tracing::info!(
         "Lifecycle event {} for wallet {}",

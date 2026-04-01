@@ -3,7 +3,8 @@ use rusqlite::{params, Connection};
 use std::sync::Mutex;
 
 use crate::memo::{
-    hash_contract_anchor, hash_deployment, hash_exit, hash_hosting_payment, hash_ownership_attest,
+    hash_contract_anchor, hash_deployment, hash_exit, hash_governance_proposal,
+    hash_governance_result, hash_governance_vote, hash_hosting_payment, hash_ownership_attest,
     hash_program_entry, hash_shield_renewal, hash_staking_deposit, hash_staking_reward,
     hash_staking_withdraw, hash_transfer, MemoType,
 };
@@ -564,6 +565,63 @@ impl Db {
     ) -> Result<(MerkleLeafRecord, MerkleRootRecord)> {
         let leaf_hash = hex::encode(hash_staking_reward(wallet_hash, amount_zat, epoch));
         self.insert_leaf_raw(MemoType::StakingReward, &leaf_hash, wallet_hash, None)
+    }
+
+    pub fn insert_governance_proposal_leaf(
+        &self,
+        wallet_hash: &str,
+        proposal_id: &str,
+        proposal_hash: &str,
+    ) -> Result<(MerkleLeafRecord, MerkleRootRecord)> {
+        let leaf_hash = hex::encode(hash_governance_proposal(
+            wallet_hash,
+            proposal_id,
+            proposal_hash,
+        ));
+        self.insert_leaf_raw(
+            MemoType::GovernanceProposal,
+            &leaf_hash,
+            wallet_hash,
+            Some(proposal_id),
+        )
+    }
+
+    pub fn insert_governance_vote_leaf(
+        &self,
+        wallet_hash: &str,
+        proposal_id: &str,
+        vote_commitment: &str,
+    ) -> Result<(MerkleLeafRecord, MerkleRootRecord)> {
+        let leaf_hash = hex::encode(hash_governance_vote(
+            wallet_hash,
+            proposal_id,
+            vote_commitment,
+        ));
+        self.insert_leaf_raw(
+            MemoType::GovernanceVote,
+            &leaf_hash,
+            wallet_hash,
+            Some(proposal_id),
+        )
+    }
+
+    pub fn insert_governance_result_leaf(
+        &self,
+        wallet_hash: &str,
+        proposal_id: &str,
+        result_hash: &str,
+    ) -> Result<(MerkleLeafRecord, MerkleRootRecord)> {
+        let leaf_hash = hex::encode(hash_governance_result(
+            wallet_hash,
+            proposal_id,
+            result_hash,
+        ));
+        self.insert_leaf_raw(
+            MemoType::GovernanceResult,
+            &leaf_hash,
+            wallet_hash,
+            Some(proposal_id),
+        )
     }
 
     /// Get all Merkle leaves for a wallet hash (lifecycle timeline).

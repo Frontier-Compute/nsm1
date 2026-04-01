@@ -19,6 +19,9 @@ pub enum MemoType {
     StakingDeposit = 0x0A,
     StakingWithdraw = 0x0B,
     StakingReward = 0x0C,
+    GovernanceProposal = 0x0D,
+    GovernanceVote = 0x0E,
+    GovernanceResult = 0x0F,
 }
 
 impl MemoType {
@@ -40,6 +43,9 @@ impl MemoType {
             0x0A => Ok(Self::StakingDeposit),
             0x0B => Ok(Self::StakingWithdraw),
             0x0C => Ok(Self::StakingReward),
+            0x0D => Ok(Self::GovernanceProposal),
+            0x0E => Ok(Self::GovernanceVote),
+            0x0F => Ok(Self::GovernanceResult),
             _ => Err(anyhow!("unknown memo type: 0x{value:02x}")),
         }
     }
@@ -58,6 +64,9 @@ impl MemoType {
             Self::StakingDeposit => "STAKING_DEPOSIT",
             Self::StakingWithdraw => "STAKING_WITHDRAW",
             Self::StakingReward => "STAKING_REWARD",
+            Self::GovernanceProposal => "GOVERNANCE_PROPOSAL",
+            Self::GovernanceVote => "GOVERNANCE_VOTE",
+            Self::GovernanceResult => "GOVERNANCE_RESULT",
         }
     }
 
@@ -76,6 +85,9 @@ impl MemoType {
             "STAKING_DEPOSIT" => Ok(Self::StakingDeposit),
             "STAKING_WITHDRAW" => Ok(Self::StakingWithdraw),
             "STAKING_REWARD" => Ok(Self::StakingReward),
+            "GOVERNANCE_PROPOSAL" => Ok(Self::GovernanceProposal),
+            "GOVERNANCE_VOTE" => Ok(Self::GovernanceVote),
+            "GOVERNANCE_RESULT" => Ok(Self::GovernanceResult),
             _ => Err(anyhow!("unknown memo label: {s}")),
         }
     }
@@ -237,6 +249,47 @@ pub fn hash_staking_reward(wallet_hash: &str, amount_zat: u64, epoch: u32) -> [u
     payload.extend_from_slice(&amount_zat.to_be_bytes());
     payload.extend_from_slice(&epoch.to_be_bytes());
     hash_payload(MemoType::StakingReward, &payload)
+}
+
+pub fn hash_governance_proposal(
+    wallet_hash: &str,
+    proposal_id: &str,
+    proposal_hash: &str,
+) -> [u8; 32] {
+    let mut payload = Vec::new();
+    payload.extend_from_slice(&(wallet_hash.len() as u16).to_be_bytes());
+    payload.extend_from_slice(wallet_hash.as_bytes());
+    payload.extend_from_slice(&(proposal_id.len() as u16).to_be_bytes());
+    payload.extend_from_slice(proposal_id.as_bytes());
+    payload.extend_from_slice(&(proposal_hash.len() as u16).to_be_bytes());
+    payload.extend_from_slice(proposal_hash.as_bytes());
+    hash_payload(MemoType::GovernanceProposal, &payload)
+}
+
+pub fn hash_governance_vote(
+    wallet_hash: &str,
+    proposal_id: &str,
+    vote_commitment: &str,
+) -> [u8; 32] {
+    let mut payload = Vec::new();
+    payload.extend_from_slice(&(wallet_hash.len() as u16).to_be_bytes());
+    payload.extend_from_slice(wallet_hash.as_bytes());
+    payload.extend_from_slice(&(proposal_id.len() as u16).to_be_bytes());
+    payload.extend_from_slice(proposal_id.as_bytes());
+    payload.extend_from_slice(&(vote_commitment.len() as u16).to_be_bytes());
+    payload.extend_from_slice(vote_commitment.as_bytes());
+    hash_payload(MemoType::GovernanceVote, &payload)
+}
+
+pub fn hash_governance_result(wallet_hash: &str, proposal_id: &str, result_hash: &str) -> [u8; 32] {
+    let mut payload = Vec::new();
+    payload.extend_from_slice(&(wallet_hash.len() as u16).to_be_bytes());
+    payload.extend_from_slice(wallet_hash.as_bytes());
+    payload.extend_from_slice(&(proposal_id.len() as u16).to_be_bytes());
+    payload.extend_from_slice(proposal_id.as_bytes());
+    payload.extend_from_slice(&(result_hash.len() as u16).to_be_bytes());
+    payload.extend_from_slice(result_hash.as_bytes());
+    hash_payload(MemoType::GovernanceResult, &payload)
 }
 
 pub fn merkle_root_memo(root_hash: &[u8; 32]) -> StructuredMemo {
