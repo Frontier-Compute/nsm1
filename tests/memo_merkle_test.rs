@@ -1,7 +1,8 @@
 use zap1::memo::{
-    hash_contract_anchor, hash_deployment, hash_exit, hash_hosting_payment, hash_ownership_attest,
-    hash_program_entry, hash_shield_renewal, hash_transfer, merkle_root_memo, MemoType,
-    StructuredMemo,
+    hash_contract_anchor, hash_deployment, hash_exit, hash_governance_proposal,
+    hash_governance_result, hash_governance_vote, hash_hosting_payment, hash_ownership_attest,
+    hash_program_entry, hash_shield_renewal, hash_staking_deposit, hash_staking_reward,
+    hash_staking_withdraw, hash_transfer, merkle_root_memo, MemoType, StructuredMemo,
 };
 use zap1::merkle::{compute_root, decode_hash, generate_proof};
 
@@ -374,4 +375,58 @@ fn merkle_proof_verifies_12_leaves() {
         }
         assert_eq!(current, root, "Proof failed for leaf {i} of 12");
     }
+}
+
+#[test]
+fn staking_deposit_hash_deterministic() {
+    let a = hash_staking_deposit("validator_001", 1_000_000_000, "val-london-01");
+    let b = hash_staking_deposit("validator_001", 1_000_000_000, "val-london-01");
+    assert_eq!(a, b);
+    let c = hash_staking_deposit("validator_002", 1_000_000_000, "val-london-01");
+    assert_ne!(a, c);
+}
+
+#[test]
+fn staking_withdraw_hash_deterministic() {
+    let a = hash_staking_withdraw("validator_001", 500_000_000, "val-london-01");
+    let b = hash_staking_withdraw("validator_001", 500_000_000, "val-london-01");
+    assert_eq!(a, b);
+    let c = hash_staking_withdraw("validator_001", 500_000_001, "val-london-01");
+    assert_ne!(a, c);
+}
+
+#[test]
+fn staking_reward_hash_deterministic() {
+    let a = hash_staking_reward("validator_001", 312_500, 1);
+    let b = hash_staking_reward("validator_001", 312_500, 1);
+    assert_eq!(a, b);
+    let c = hash_staking_reward("validator_001", 312_500, 2);
+    assert_ne!(a, c);
+}
+
+#[test]
+fn governance_proposal_hash_deterministic() {
+    let a = hash_governance_proposal("dao_op", "prop-001", "abcdef1234");
+    let b = hash_governance_proposal("dao_op", "prop-001", "abcdef1234");
+    assert_eq!(a, b);
+    let c = hash_governance_proposal("dao_op", "prop-002", "abcdef1234");
+    assert_ne!(a, c);
+}
+
+#[test]
+fn governance_vote_hash_deterministic() {
+    let a = hash_governance_vote("voter_a", "prop-001", "commitment_hash_a");
+    let b = hash_governance_vote("voter_a", "prop-001", "commitment_hash_a");
+    assert_eq!(a, b);
+    let c = hash_governance_vote("voter_b", "prop-001", "commitment_hash_a");
+    assert_ne!(a, c);
+}
+
+#[test]
+fn governance_result_hash_deterministic() {
+    let a = hash_governance_result("dao_op", "prop-001", "tally_hash");
+    let b = hash_governance_result("dao_op", "prop-001", "tally_hash");
+    assert_eq!(a, b);
+    let c = hash_governance_result("dao_op", "prop-001", "different_tally");
+    assert_ne!(a, c);
 }
