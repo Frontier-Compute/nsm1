@@ -30,6 +30,34 @@ pub struct Config {
 }
 
 impl Config {
+    pub fn test_defaults() -> Self {
+        Self {
+            ufvk: String::new(),
+            network: Network::MainNetwork,
+            zebra_rpc_url: "http://127.0.0.1:8232".to_string(),
+            zaino_grpc_url: None,
+            listen_addr: "127.0.0.1:0".to_string(),
+            db_path: ":memory:".to_string(),
+            scan_from_height: 0,
+            webhook_url: None,
+            signal_number: None,
+            signal_api_url: None,
+            foreman_api_key: None,
+            foreman_client_id: None,
+            api_key: Some("test_key".to_string()),
+            anchor_enabled: false,
+            anchor_zingo_cli: None,
+            anchor_chain: "mainnet".to_string(),
+            anchor_server: None,
+            anchor_data_dir: None,
+            anchor_to_address: None,
+            anchor_amount_zat: 1000,
+            anchor_threshold: 10,
+            anchor_interval_hours: 24,
+            anchor_webhook_url: None,
+        }
+    }
+
     pub fn from_env() -> Result<Self> {
         let ufvk = std::env::var("UFVK").context("UFVK env var required")?;
 

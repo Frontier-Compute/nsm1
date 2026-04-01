@@ -79,6 +79,9 @@ zap1-verify = { path = "zap1-verify" }
 # Universal memo decoder
 zcash-memo-decode = "0.1.0"
 
+[dev-dependencies]
+tower = "0.5"
+
 [build-dependencies]
 tonic-build = "0.12"
 
