@@ -25,8 +25,7 @@ One production deployment is live on mainnet. The protocol is application-agnost
 
 ## Protocol
 
-Twelve memo types are defined in ZAP1. Nine are deployed and three are
-reserved for Crosslink:
+Fifteen event types are defined in ZAP1:
 
 | Type | Name | Trigger |
 |------|------|---------|
@@ -39,9 +38,12 @@ reserved for Crosslink:
 | `0x07` | `TRANSFER` | Ownership transferred to a new wallet hash |
 | `0x08` | `EXIT` | Participant exit or hardware release recorded |
 | `0x09` | `MERKLE_ROOT` | Current Merkle root anchored to Zcash |
-| `0x0A` | `STAKING_DEPOSIT` | Reserved for Crosslink |
-| `0x0B` | `STAKING_WITHDRAW` | Reserved for Crosslink |
-| `0x0C` | `STAKING_REWARD` | Reserved for Crosslink |
+| `0x0A` | `STAKING_DEPOSIT` | Validator stake locked |
+| `0x0B` | `STAKING_WITHDRAW` | Validator stake unlocked |
+| `0x0C` | `STAKING_REWARD` | Block reward recorded |
+| `0x0D` | `GOVERNANCE_PROPOSAL` | Governance proposal submitted |
+| `0x0E` | `GOVERNANCE_VOTE` | Vote commitment recorded |
+| `0x0F` | `GOVERNANCE_RESULT` | Tally result anchored |
 
 All hashes use BLAKE2b-256 with `NordicShield_` personalization. Merkle nodes use `NordicShield_MRK`. Full spec: [ONCHAIN_PROTOCOL.md](ONCHAIN_PROTOCOL.md).
 
@@ -69,14 +71,21 @@ docker compose -f docker-compose.mainnet.yml build
 docker compose -f docker-compose.mainnet.yml up -d
 ```
 
-## Independent verification
+## Examples
+
+Runnable scripts in `examples/`. No install needed beyond curl + python3.
 
 ```bash
-python3 verify_proof.py \
-  --wallet-hash <wallet_hash> \
-  --serial <serial_number> \
-  --proof proof.json \
-  --root <expected_root_hex>
+bash examples/quickstart.sh                     # protocol tour in 60 seconds
+bash examples/governance_demo.sh YOUR_API_KEY    # full governance cycle
+python3 examples/verify_proof.py LEAF_HASH       # fetch and display a proof
+python3 examples/verify_onchain.py proof.json    # independent Merkle + chain verification
+python3 examples/conformance_check.py URL        # validate any ZAP1 instance (19 checks)
+bash examples/validate_instance.sh URL           # instance health check (10 checks)
+bash examples/create_event.sh YOUR_API_KEY       # create an event
+python3 examples/decode_memo.py HEX              # decode any Zcash memo
+bash examples/check_anchor.sh TXID_PREFIX        # verify an anchor on-chain
+node examples/memo_decode.js HEX                 # zero-dep JS memo parser
 ```
 
 ## Verification SDK
