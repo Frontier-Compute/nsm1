@@ -22,7 +22,7 @@ Confirms:
 
 - protocol name: `ZAP1`
 - version metadata
-- event type counts: 12 defined, 9 deployed, 3 reserved
+- event type counts: 15 defined, 15 deployed
 - verification SDK reference
 - FROST and ZIP status
 
@@ -135,7 +135,7 @@ Open:
 
 Confirms:
 
-- deterministic vectors exist for all 9 deployed ZAP1 event types
+- deterministic vectors exist for all 15 deployed ZAP1 event types
 
 ## 10. Clone and run tests
 

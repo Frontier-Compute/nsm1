@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: ZAP1 Attestation Protocol
   description: Read-only API for Zcash on-chain attestation discovery, verification, and memo classification.
-  version: "2.2.0"
+  version: "3.0.0-draft"
   license:
     name: MIT
     url: https://github.com/Frontier-Compute/zap1/blob/main/LICENSE
@@ -371,3 +371,132 @@ paths:
                     type: string
         "400":
           description: Invalid hex input
+
+  /event:
+    post:
+      summary: Create lifecycle event
+      operationId: createEvent
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [event_type, wallet_hash]
+              properties:
+                event_type:
+                  type: string
+                  enum: [CONTRACT_ANCHOR, DEPLOYMENT, HOSTING_PAYMENT, SHIELD_RENEWAL, TRANSFER, EXIT, STAKING_DEPOSIT, STAKING_WITHDRAW, STAKING_REWARD, GOVERNANCE_PROPOSAL, GOVERNANCE_VOTE, GOVERNANCE_RESULT]
+                wallet_hash:
+                  type: string
+                serial_number:
+                  type: string
+                facility_id:
+                  type: string
+                contract_sha256:
+                  type: string
+                month:
+                  type: integer
+                year:
+                  type: integer
+                new_wallet_hash:
+                  type: string
+                amount_zat:
+                  type: integer
+                validator_id:
+                  type: string
+                epoch:
+                  type: integer
+                proposal_id:
+                  type: string
+                proposal_hash:
+                  type: string
+                vote_commitment:
+                  type: string
+                result_hash:
+                  type: string
+      responses:
+        "201":
+          description: Event created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  event_type:
+                    type: string
+                  leaf_hash:
+                    type: string
+                  root_hash:
+                    type: string
+                  verify_url:
+                    type: string
+        "401":
+          description: Missing or invalid API key
+
+  /lifecycle/{wallet_hash}:
+    get:
+      summary: Lifecycle events for a wallet
+      operationId: getLifecycle
+      parameters:
+        - name: wallet_hash
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lifecycle event timeline
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+
+  /build/info:
+    get:
+      summary: Build metadata
+      operationId: getBuildInfo
+      responses:
+        "200":
+          description: Build version and commit info
+
+  /badge/status.svg:
+    get:
+      summary: Protocol status badge (SVG)
+      operationId: getBadgeStatus
+      responses:
+        "200":
+          description: SVG badge
+          content:
+            image/svg+xml:
+              schema:
+                type: string
+
+  /badge/anchor/{txid_prefix}:
+    get:
+      summary: Anchor verification badge (SVG)
+      operationId: getBadgeAnchor
+      parameters:
+        - name: txid_prefix
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 16
+      responses:
+        "200":
+          description: SVG badge showing anchor status
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
