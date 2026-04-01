@@ -149,23 +149,33 @@ Input encoding matches `src/memo.rs` and `verify_proof.py` exactly:
     {
       "event_type": "STAKING_DEPOSIT",
       "type_byte": "0x0A",
-      "status": "reserved_for_crosslink",
-      "construction_rule": "BLAKE2b_32(0x0A || wallet_hash || amount_zat_be || validator_id)",
-      "note": "No hash functions implemented yet. Hash construction is preliminary and subject to change when the Crosslink staking protocol finalizes. Test vectors will be published when the type activates."
+      "status": "active",
+      "construction_rule": "BLAKE2b_32(personalization: NordicShield_, input: 0x0A || len(wallet_hash) || wallet_hash || amount_zat(8 bytes BE) || len(validator_id) || validator_id)",
+      "input_fields": {
+        "wallet_hash": "crosslink_validator_001",
+        "amount_zat": 1000000000,
+        "validator_id": "validator-london-01"
+      },
+      "expected_hash": "94473f27ed59a1cca8353a5e26127dd61b3f23c67320c5f1c458e3dbc0d61803"
     },
     {
       "event_type": "STAKING_WITHDRAW",
       "type_byte": "0x0B",
-      "status": "reserved_for_crosslink",
-      "construction_rule": "BLAKE2b_32(0x0B || wallet_hash || amount_zat_be)",
-      "note": "No hash functions implemented yet. Hash construction is preliminary and subject to change when the Crosslink staking protocol finalizes. Test vectors will be published when the type activates."
+      "status": "active",
+      "construction_rule": "BLAKE2b_32(personalization: NordicShield_, input: 0x0B || len(wallet_hash) || wallet_hash || amount_zat(8 bytes BE) || len(validator_id) || validator_id)",
+      "note": "Same construction as STAKING_DEPOSIT with type byte 0x0B"
     },
     {
       "event_type": "STAKING_REWARD",
       "type_byte": "0x0C",
-      "status": "reserved_for_crosslink",
-      "construction_rule": "BLAKE2b_32(0x0C || wallet_hash || epoch_be || reward_zat_be)",
-      "note": "No hash functions implemented yet. Hash construction is preliminary and subject to change when the Crosslink staking protocol finalizes. Test vectors will be published when the type activates."
+      "status": "active",
+      "construction_rule": "BLAKE2b_32(personalization: NordicShield_, input: 0x0C || len(wallet_hash) || wallet_hash || amount_zat(8 bytes BE) || epoch(4 bytes BE))",
+      "input_fields": {
+        "wallet_hash": "crosslink_validator_001",
+        "amount_zat": 312500,
+        "epoch": 1
+      },
+      "expected_hash": "22371dd6f20d531631e331dc6ff27cd633e6eee9c92b3df1418da53885aaec43"
     }
   ],
   "conformance_vectors": [
