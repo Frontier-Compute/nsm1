@@ -156,6 +156,7 @@ See [conformance/](conformance/) for fixtures, schemas, versioning policy, and c
 ## Ecosystem
 
 - **Verification SDK (Rust + WASM):** [Frontier-Compute/zap1-verify](https://github.com/Frontier-Compute/zap1-verify) - 22 tests
+- **Solidity verifier (EVM):** [Frontier-Compute/zap1-verify-sol](https://github.com/Frontier-Compute/zap1-verify-sol) - BLAKE2b via EIP-152, Merkle proof verification, anchor registry
 - **JS/TS SDK:** [Frontier-Compute/zap1-js](https://github.com/Frontier-Compute/zap1-js) - 19 tests
 - **Attestation explorer:** [explorer.frontiercompute.io](https://explorer.frontiercompute.io)
 - **Lifecycle simulator:** [simulator.frontiercompute.io](https://simulator.frontiercompute.io)
