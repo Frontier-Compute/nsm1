@@ -383,7 +383,7 @@ The credential profile depends on the proof profile and is not expected to deplo
 ## 13. Versioning and Extension Policy
 
 - The event type registry (0x01 - 0x0F) is append-only. Existing types are never redefined.
-- New event types are allocated by incrementing the type byte. Types 0x10 - 0xFF are reserved.
+- New event types are allocated by incrementing the type byte. Types 0x10 - 0x1F are reserved for ZSA attestation (see ZSA_ATTESTATION.md). Types 0x20 - 0xFF are unallocated.
 - Profiles are namespaced: `base`, `proof`, `credential`. New profiles do not modify the base profile.
 - Hash construction rules for the base profile types (0x01 - 0x0C) are frozen at v2.2.0. Governance types (0x0D - 0x0F) are added in v3.0.0. Changes to frozen types require a new major version.
 - The `NordicShield_` personalization is deployment-specific. Other deployments may use different personalization strings without conflicting with the protocol specification. The zap1-verify SDK (v0.2.0+) accepts configurable personalization.
