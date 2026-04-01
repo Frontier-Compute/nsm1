@@ -1,10 +1,13 @@
 # ONCHAIN_PROTOCOL.md
 
-**Specification Version: 3.0.0-draft**
-
-**Version:** 2.2.0  
-**Date:** 2026-03-28  
+**Version:** 3.0.0-draft  
+**Date:** 2026-04-01  
 **Status:** Deployed on Zcash mainnet
+
+### Changelog
+
+- v3.0.0-draft (2026-04-01): add governance event types 0x0D-0x0F, bump type count to 15, add hash constructions for governance types
+- v2.2.0 (2026-03-28): add type byte prefix to hash construction, renumber sections
 
 ## 1. Overview
 
@@ -34,7 +37,7 @@ ZAP1:{type}:{payload_hash}
 Where:
 
 - `ZAP1` is the protocol marker (legacy memos use `NSM1`, accepted during decode)
-- `{type}` is the two-digit lowercase hex event type byte (01-0c)
+- `{type}` is the two-digit lowercase hex event type byte (01-0f)
 - `{payload_hash}` is the 64-character hex encoding of the 32-byte BLAKE2b-256 payload hash
 
 Total memo size: 73 bytes (4 + 1 + 2 + 1 + 64 + 1 separators). Fits in any Zcash shielded memo (512 bytes pre-ZIP 231, 16 KiB post-ZIP 231).
@@ -57,8 +60,11 @@ Transaction types:
 | `0x0A` | `STAKING_DEPOSIT` | `hash(wallet_hash || amount_zat_be || validator_id)` | Reserved for Crosslink |
 | `0x0B` | `STAKING_WITHDRAW` | `hash(wallet_hash || amount_zat_be)` | Reserved for Crosslink |
 | `0x0C` | `STAKING_REWARD` | `hash(wallet_hash || epoch_be || reward_zat_be)` | Reserved for Crosslink |
+| `0x0D` | `GOVERNANCE_PROPOSAL` | `hash(wallet_hash || proposal_id || title_hash)` | Active |
+| `0x0E` | `GOVERNANCE_VOTE` | `hash(wallet_hash || proposal_id || vote)` | Active |
+| `0x0F` | `GOVERNANCE_RESULT` | `hash(proposal_id || outcome || tally_hash)` | Active |
 
-The protocol now defines twelve event types: nine deployed in production and three reserved for Crosslink staking.
+The protocol defines fifteen event types: twelve deployed in production and three reserved for Crosslink staking.
 
 ## 3. Hash Construction
 
@@ -83,6 +89,9 @@ MERKLE_ROOT        = current_root
 STAKING_DEPOSIT    = BLAKE2b_32(0x0A || wallet_hash || amount_zat_be || validator_id)
 STAKING_WITHDRAW   = BLAKE2b_32(0x0B || wallet_hash || amount_zat_be)
 STAKING_REWARD     = BLAKE2b_32(0x0C || wallet_hash || epoch_be || reward_zat_be)
+GOV_PROPOSAL       = BLAKE2b_32(0x0D || len(wallet_hash) || wallet_hash || len(proposal_id) || proposal_id || title_hash)
+GOV_VOTE           = BLAKE2b_32(0x0E || len(wallet_hash) || wallet_hash || len(proposal_id) || proposal_id || len(vote) || vote)
+GOV_RESULT         = BLAKE2b_32(0x0F || len(proposal_id) || proposal_id || len(outcome) || outcome || tally_hash)
 ```
 
 Implementation notes:
@@ -93,6 +102,7 @@ Implementation notes:
 - integer fields are big-endian
 - no memo payload includes participant name, email, phone number, or postal address
 - `STAKING_DEPOSIT`, `STAKING_WITHDRAW`, and `STAKING_REWARD` are reserved for Crosslink. They are not yet active, and their hash construction is preliminary and subject to change when the Crosslink staking protocol finalizes.
+- `GOVERNANCE_PROPOSAL`, `GOVERNANCE_VOTE`, and `GOVERNANCE_RESULT` use length-prefixed fields consistent with the existing hash construction pattern. `title_hash` and `tally_hash` are 32-byte BLAKE2b-256 digests of the proposal title and tally data respectively.
 
 ## 4. Merkle Tree
 
@@ -173,6 +183,7 @@ The full participant lifecycle uses these event classes:
 8. Participant exits or requests delivery or termination: `EXIT`
 9. Every batch of deployed events is committed by `MERKLE_ROOT`
 10. Reserved Crosslink staking events (`STAKING_DEPOSIT`, `STAKING_WITHDRAW`, `STAKING_REWARD`) remain inactive until the staking protocol is finalized
+11. Governance proposals, votes, and results are committed via `GOVERNANCE_PROPOSAL`, `GOVERNANCE_VOTE`, `GOVERNANCE_RESULT`
 
 This produces a continuous on-chain record for the program lifecycle, while keeping participant identity off-chain.
 
@@ -218,7 +229,7 @@ For Wyoming filing purposes, the protocol is the DAO's audit and commitment laye
 
 ## 11. API Reference
 
-The deployed API exposes event insertion, lifecycle lookup, and operational stats. The protocol now defines twelve event types (nine deployed, three reserved for Crosslink staking). This section documents the protocol-level contract for those endpoints.
+The deployed API exposes event insertion, lifecycle lookup, and operational stats. The protocol defines fifteen event types (twelve deployed, three reserved for Crosslink staking). This section documents the protocol-level contract for those endpoints.
 
 ### `POST /event`
 
@@ -371,19 +382,9 @@ The credential profile depends on the proof profile and is not expected to deplo
 
 ## 13. Versioning and Extension Policy
 
-- The event type registry (0x01 - 0x0C) is append-only. Existing types are never redefined.
-- New event types are allocated by incrementing the type byte. Types 0x0D - 0xFF are reserved.
+- The event type registry (0x01 - 0x0F) is append-only. Existing types are never redefined.
+- New event types are allocated by incrementing the type byte. Types 0x10 - 0xFF are reserved.
 - Profiles are namespaced: `base`, `proof`, `credential`. New profiles do not modify the base profile.
-- Hash construction rules for the base profile are frozen at v2.2.0. Changes require a new major version.
+- Hash construction rules for the base profile types (0x01 - 0x0C) are frozen at v2.2.0. Governance types (0x0D - 0x0F) are added in v3.0.0-draft. Changes to frozen types require a new major version.
 - The `NordicShield_` personalization is deployment-specific. Other deployments may use different personalization strings without conflicting with the protocol specification. The zap1-verify SDK (v0.2.0+) accepts configurable personalization.
 
-## Changelog
-
-### 3.0.0-draft (2026-03-31)
-- Added type byte prefix to leaf hash construction (Section 3)
-- Renumbered sections 12-15 to fix gap from removed sections
-- Clarified domain separation constants
-- Added STAKING_DEPOSIT, STAKING_WITHDRAW, STAKING_REWARD event types
-
-### 2.2.0
-- Initial public specification

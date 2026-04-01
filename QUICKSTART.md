@@ -22,7 +22,7 @@ Confirms:
 
 - protocol name: `ZAP1`
 - version metadata
-- event type counts: 15 defined, 15 deployed
+- event type counts: 15 defined, 12 deployed, 3 reserved
 - verification SDK reference
 - FROST and ZIP status
 

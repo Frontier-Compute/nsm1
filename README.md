@@ -4,7 +4,7 @@
 
 Open-source attestation protocol for Zcash. Commits typed lifecycle events to a BLAKE2b Merkle tree and anchors roots on-chain via shielded memos. Any Zcash-native operator can use it.
 
-4 mainnet anchors. 15 event types. 118 tests. 60 automated checks. MIT licensed. Live stats: https://pay.frontiercompute.io/stats
+4 mainnet anchors. 23 leaves. 15 event types. 118 tests. 60 automated checks. MIT licensed. Live stats: https://pay.frontiercompute.io/stats
 
 [ZIP draft PR #1243](https://github.com/zcash/zips/pull/1243) | [QUICKSTART](QUICKSTART.md) | [crates.io](https://crates.io/crates/zap1-verify) | [zcash-memo-decode](https://crates.io/crates/zcash-memo-decode)
 
@@ -25,7 +25,8 @@ One production deployment is live on mainnet. The protocol is application-agnost
 
 ## Protocol
 
-Fifteen event types are defined in ZAP1:
+Fifteen event types are defined in ZAP1. Twelve are deployed, three
+are reserved for Crosslink staking:
 
 | Type | Name | Trigger |
 |------|------|---------|
@@ -38,12 +39,12 @@ Fifteen event types are defined in ZAP1:
 | `0x07` | `TRANSFER` | Ownership transferred to a new wallet hash |
 | `0x08` | `EXIT` | Participant exit or hardware release recorded |
 | `0x09` | `MERKLE_ROOT` | Current Merkle root anchored to Zcash |
-| `0x0A` | `STAKING_DEPOSIT` | Validator stake locked |
-| `0x0B` | `STAKING_WITHDRAW` | Validator stake unlocked |
-| `0x0C` | `STAKING_REWARD` | Block reward recorded |
+| `0x0A` | `STAKING_DEPOSIT` | Reserved for Crosslink |
+| `0x0B` | `STAKING_WITHDRAW` | Reserved for Crosslink |
+| `0x0C` | `STAKING_REWARD` | Reserved for Crosslink |
 | `0x0D` | `GOVERNANCE_PROPOSAL` | Governance proposal submitted |
-| `0x0E` | `GOVERNANCE_VOTE` | Vote commitment recorded |
-| `0x0F` | `GOVERNANCE_RESULT` | Tally result anchored |
+| `0x0E` | `GOVERNANCE_VOTE` | Governance vote cast |
+| `0x0F` | `GOVERNANCE_RESULT` | Governance outcome recorded |
 
 All hashes use BLAKE2b-256 with `NordicShield_` personalization. Merkle nodes use `NordicShield_MRK`. Full spec: [ONCHAIN_PROTOCOL.md](ONCHAIN_PROTOCOL.md).
 
@@ -185,4 +186,4 @@ cargo test --release --test memo_merkle_test
 ## License
 
 MIT
-# updated 2026-03-27T23:30:24Z
+# updated 2026-04-01
