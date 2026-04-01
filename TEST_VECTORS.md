@@ -176,6 +176,42 @@ Input encoding matches `src/memo.rs` and `verify_proof.py` exactly:
         "epoch": 1
       },
       "expected_hash": "22371dd6f20d531631e331dc6ff27cd633e6eee9c92b3df1418da53885aaec43"
+    },
+    {
+      "event_type": "GOVERNANCE_PROPOSAL",
+      "type_byte": "0x0D",
+      "status": "active",
+      "construction_rule": "BLAKE2b_32(personalization: NordicShield_, input: 0x0D || len(wallet_hash) || wallet_hash || len(proposal_id) || proposal_id || len(proposal_hash) || proposal_hash)",
+      "input_fields": {
+        "wallet_hash": "dao_op",
+        "proposal_id": "prop-001",
+        "proposal_hash": "abcdef1234"
+      },
+      "expected_hash": "a487c25f5867a9e3760c45ae7eed24d84e771568f1826a889ccd94b3c7c3a5b5"
+    },
+    {
+      "event_type": "GOVERNANCE_VOTE",
+      "type_byte": "0x0E",
+      "status": "active",
+      "construction_rule": "BLAKE2b_32(personalization: NordicShield_, input: 0x0E || len(wallet_hash) || wallet_hash || len(proposal_id) || proposal_id || len(vote_commitment) || vote_commitment)",
+      "input_fields": {
+        "wallet_hash": "voter_a",
+        "proposal_id": "prop-001",
+        "vote_commitment": "commitment_hash_a"
+      },
+      "expected_hash": "eae1f9926e3c60152d20c433a61ed478f9ac16d5bad7d07a257d5a3da05c40b7"
+    },
+    {
+      "event_type": "GOVERNANCE_RESULT",
+      "type_byte": "0x0F",
+      "status": "active",
+      "construction_rule": "BLAKE2b_32(personalization: NordicShield_, input: 0x0F || len(wallet_hash) || wallet_hash || len(proposal_id) || proposal_id || len(result_hash) || result_hash)",
+      "input_fields": {
+        "wallet_hash": "dao_op",
+        "proposal_id": "prop-001",
+        "result_hash": "tally_hash"
+      },
+      "expected_hash": "6f698f731247c2b6a50c46ba471b52e812837725ec6113a53cca6b649ce24ce1"
     }
   ],
   "conformance_vectors": [
@@ -292,6 +328,30 @@ Input encoding matches `src/memo.rs` and `verify_proof.py` exactly:
 - The sample values are deterministic and can be recomputed with the hash functions in `verify_proof.py` or `src/memo.rs`.
 - Any implementation can use these vectors to confirm leaf construction matches ZAP1.
 - `MERKLE_ROOT` (0x09) is included because it is one of the fifteen ZAP1 event types, but it is not hashed the same way as `0x01` through `0x08`. The payload is the raw 32-byte root.
-- `STAKING_DEPOSIT` (0x0A), `STAKING_WITHDRAW` (0x0B), and `STAKING_REWARD` (0x0C) are reserved for Crosslink. No hash functions are implemented in the reference codebase. Their construction rules are preliminary. Concrete test vectors will be added when these types activate.
+- `STAKING_DEPOSIT` (0x0A), `STAKING_WITHDRAW` (0x0B), and `STAKING_REWARD` (0x0C) are reserved for Crosslink. Their construction rules are preliminary and subject to change when the Crosslink staking protocol finalizes.
 - Merkle tree vectors use `NordicShield_MRK` personalization for internal node hashing. Odd-layer duplication: if a layer has an odd number of nodes, the final node is duplicated before pairing.
 - Memo encoding vectors cover the `ZAP1:{type_hex}:{payload_hex}` wire format (73 ASCII bytes) and the legacy `NSM1` prefix accepted during decode.
+
+## Cross-Implementation Validation
+
+To validate an independent implementation against these vectors:
+
+1. Implement BLAKE2b-256 with the personalization parameter set to `NordicShield_` (13 bytes, no null terminator). The personalization goes into the BLAKE2b parameter block, not the input.
+
+2. For each event vector above, construct the input bytes as specified in `construction_rule`:
+   - Prepend the 1-byte type (e.g., `0x01` for PROGRAM_ENTRY)
+   - Length-prefix variable-length fields with 2-byte big-endian length where noted
+   - Integer fields use big-endian encoding (4 bytes for month/year, 8 bytes for timestamp/amount)
+
+3. Hash the constructed input. The output must match `expected_leaf_hash` or `expected_hash` exactly.
+
+4. For Merkle tree validation, use personalization `NordicShield_MRK` for node hashes. Compute `BLAKE2b_32(left || right)` for each pair. Duplicate the final node if a layer has an odd count.
+
+5. For memo wire format, verify your encoder produces the exact ASCII string in `expected_memo_string` and that your decoder accepts both `ZAP1:` and `NSM1:` prefixes.
+
+Reference implementations for comparison:
+- Rust: `src/memo.rs` (hash functions), `tests/memo_merkle_test.rs` (assertions)
+- Python: `verify_proof.py` (standalone verifier)
+- JSON fixtures: `conformance/hash_vectors.json`, `conformance/tree_vectors.json`
+
+Run `cargo test --release --test memo_merkle_test` to execute all assertions against these vectors.

@@ -1,12 +1,12 @@
 # ONCHAIN_PROTOCOL.md
 
-**Version:** 3.0.0-draft  
+**Version:** 3.0.0  
 **Date:** 2026-04-01  
 **Status:** Deployed on Zcash mainnet
 
 ### Changelog
 
-- v3.0.0-draft (2026-04-01): add governance event types 0x0D-0x0F, bump type count to 15, add hash constructions for governance types
+- v3.0.0 (2026-04-01): add governance event types 0x0D-0x0F, bump type count to 15, add hash constructions for governance types, cross-implementation validation instructions
 - v2.2.0 (2026-03-28): add type byte prefix to hash construction, renumber sections
 
 ## 1. Overview
@@ -385,6 +385,6 @@ The credential profile depends on the proof profile and is not expected to deplo
 - The event type registry (0x01 - 0x0F) is append-only. Existing types are never redefined.
 - New event types are allocated by incrementing the type byte. Types 0x10 - 0xFF are reserved.
 - Profiles are namespaced: `base`, `proof`, `credential`. New profiles do not modify the base profile.
-- Hash construction rules for the base profile types (0x01 - 0x0C) are frozen at v2.2.0. Governance types (0x0D - 0x0F) are added in v3.0.0-draft. Changes to frozen types require a new major version.
+- Hash construction rules for the base profile types (0x01 - 0x0C) are frozen at v2.2.0. Governance types (0x0D - 0x0F) are added in v3.0.0. Changes to frozen types require a new major version.
 - The `NordicShield_` personalization is deployment-specific. Other deployments may use different personalization strings without conflicting with the protocol specification. The zap1-verify SDK (v0.2.0+) accepts configurable personalization.
 

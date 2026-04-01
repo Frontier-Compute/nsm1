@@ -1,6 +1,6 @@
 # Changelog
 
-## 3.0.0-draft (2026-03-31)
+## 3.0.0 (2026-04-01)
 
 - Added type byte prefix to leaf hash construction (spec Section 3)
 - Renumbered spec sections to close gap from removed sections

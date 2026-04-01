@@ -980,10 +980,10 @@ async fn recent_events(
 async fn protocol_info() -> Json<serde_json::Value> {
     Json(serde_json::json!({
         "protocol": "ZAP1",
-        "version": "3.0.0-draft",
+        "version": "3.0.0",
         "event_types": 15,
-        "deployed_types": 15,
-        "reserved_types": 0,
+        "deployed_types": 12,
+        "reserved_types": 3,
         "hash_function": "BLAKE2b-256",
         "leaf_personalization": "NordicShield_",
         "node_personalization": "NordicShield_MRK",
