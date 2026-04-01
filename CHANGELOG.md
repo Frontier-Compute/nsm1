@@ -35,8 +35,8 @@
 ## 2.0.0 (2026-03-27)
 
 - Renamed protocol from NSM1 to ZAP1
-- 3 mainnet anchors, 12 leaves
-- 9 event types deployed, 3 reserved for Crosslink staking
+- 4 mainnet anchors, 23 leaves
+- 15 event types (12 deployed, 3 reserved for Crosslink staking)
 - BLAKE2b-256 leaf hashing with domain-separated personalization
 - Merkle tree aggregation with NordicShield_MRK node personalization
 

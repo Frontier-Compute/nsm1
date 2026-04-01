@@ -11,7 +11,7 @@ Sources:
 - `conformance/tree_vectors.json`
 - `ONCHAIN_PROTOCOL.md`
 
-This document publishes a standalone test vector suite for all twelve ZAP1 event types (`0x01` through `0x0C`), plus Merkle tree construction vectors and memo encoding vectors.
+This document publishes a standalone test vector suite for all fifteen ZAP1 event types (`0x01` through `0x0F`), plus Merkle tree construction vectors and memo encoding vectors.
 
 Hash rules:
 
@@ -291,7 +291,7 @@ Input encoding matches `src/memo.rs` and `verify_proof.py` exactly:
 - All hash values in this document are verified against `conformance/hash_vectors.json`, `conformance/tree_vectors.json`, and `tests/memo_merkle_test.rs`. No values are fabricated.
 - The sample values are deterministic and can be recomputed with the hash functions in `verify_proof.py` or `src/memo.rs`.
 - Any implementation can use these vectors to confirm leaf construction matches ZAP1.
-- `MERKLE_ROOT` (0x09) is included because it is one of the twelve ZAP1 event types, but it is not hashed the same way as `0x01` through `0x08`. The payload is the raw 32-byte root.
+- `MERKLE_ROOT` (0x09) is included because it is one of the fifteen ZAP1 event types, but it is not hashed the same way as `0x01` through `0x08`. The payload is the raw 32-byte root.
 - `STAKING_DEPOSIT` (0x0A), `STAKING_WITHDRAW` (0x0B), and `STAKING_REWARD` (0x0C) are reserved for Crosslink. No hash functions are implemented in the reference codebase. Their construction rules are preliminary. Concrete test vectors will be added when these types activate.
 - Merkle tree vectors use `NordicShield_MRK` personalization for internal node hashing. Odd-layer duplication: if a layer has an odd number of nodes, the final node is duplicated before pairing.
 - Memo encoding vectors cover the `ZAP1:{type_hex}:{payload_hex}` wire format (73 ASCII bytes) and the legacy `NSM1` prefix accepted during decode.

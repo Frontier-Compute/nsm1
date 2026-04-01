@@ -336,7 +336,7 @@ pub fn bytes_to_hex(bytes: &[u8]) -> String {
 mod tests {
     use super::*;
 
-    // TEST_VECTORS.md - all 9 event types
+    // TEST_VECTORS.md - all event types
 
     #[test]
     fn vec_01_program_entry() {
