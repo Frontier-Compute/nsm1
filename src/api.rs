@@ -957,6 +957,9 @@ async fn recent_events(
                     "GOVERNANCE_PROPOSAL" => "Governance proposal",
                     "GOVERNANCE_VOTE" => "Governance vote",
                     "GOVERNANCE_RESULT" => "Governance result",
+                    "AGENT_REGISTER" => "Agent registered",
+                    "AGENT_POLICY" => "Agent policy committed",
+                    "AGENT_ACTION" => "Agent action attested",
                     _ => "Unknown event",
                 },
                 "wallet_hash": l.wallet_hash,
@@ -980,10 +983,10 @@ async fn recent_events(
 async fn protocol_info() -> Json<serde_json::Value> {
     Json(serde_json::json!({
         "protocol": "ZAP1",
-        "version": "3.0.0-draft",
-        "event_types": 15,
+        "version": "3.0.0",
+        "event_types": 18,
         "deployed_types": 15,
-        "reserved_types": 0,
+        "reserved_types": 3,
         "hash_function": "BLAKE2b-256",
         "leaf_personalization": "NordicShield_",
         "node_personalization": "NordicShield_MRK",
@@ -1187,7 +1190,9 @@ async fn build_info() -> Json<serde_json::Value> {
 
 async fn list_webhooks(
     State(state): State<AppState>,
+    headers: HeaderMap,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    check_api_key(&state.config, &headers)?;
     let hooks = state
         .db
         .list_webhooks()
@@ -1264,6 +1269,16 @@ struct CreateEventRequest {
     proposal_hash: Option<String>,
     vote_commitment: Option<String>,
     result_hash: Option<String>,
+    // Agent fields
+    agent_id: Option<String>,
+    pubkey_hash: Option<String>,
+    model_hash: Option<String>,
+    policy_hash: Option<String>,
+    policy_version: Option<u32>,
+    rules_hash: Option<String>,
+    action_type: Option<String>,
+    input_hash: Option<String>,
+    output_hash: Option<String>,
 }
 
 async fn create_lifecycle_event(
@@ -1423,6 +1438,58 @@ async fn create_lifecycle_event(
                 .db
                 .insert_governance_result_leaf(&req.wallet_hash, pid, rh)
         }
+        "AGENT_REGISTER" => {
+            let aid = req
+                .agent_id
+                .as_deref()
+                .ok_or((StatusCode::BAD_REQUEST, "agent_id required".into()))?;
+            let pk = req
+                .pubkey_hash
+                .as_deref()
+                .ok_or((StatusCode::BAD_REQUEST, "pubkey_hash required".into()))?;
+            let mh = req
+                .model_hash
+                .as_deref()
+                .ok_or((StatusCode::BAD_REQUEST, "model_hash required".into()))?;
+            let ph = req
+                .policy_hash
+                .as_deref()
+                .ok_or((StatusCode::BAD_REQUEST, "policy_hash required".into()))?;
+            state.db.insert_agent_register_leaf(aid, pk, mh, ph)
+        }
+        "AGENT_POLICY" => {
+            let aid = req
+                .agent_id
+                .as_deref()
+                .ok_or((StatusCode::BAD_REQUEST, "agent_id required".into()))?;
+            let pv = req
+                .policy_version
+                .ok_or((StatusCode::BAD_REQUEST, "policy_version required".into()))?;
+            let rh = req
+                .rules_hash
+                .as_deref()
+                .ok_or((StatusCode::BAD_REQUEST, "rules_hash required".into()))?;
+            state.db.insert_agent_policy_leaf(aid, pv, rh)
+        }
+        "AGENT_ACTION" => {
+            let aid = req
+                .agent_id
+                .as_deref()
+                .ok_or((StatusCode::BAD_REQUEST, "agent_id required".into()))?;
+            let at = req
+                .action_type
+                .as_deref()
+                .ok_or((StatusCode::BAD_REQUEST, "action_type required".into()))?;
+            let ih = req
+                .input_hash
+                .as_deref()
+                .ok_or((StatusCode::BAD_REQUEST, "input_hash required".into()))?;
+            let oh = req
+                .output_hash
+                .as_deref()
+                .ok_or((StatusCode::BAD_REQUEST, "output_hash required".into()))?;
+            state.db.insert_agent_action_leaf(aid, at, ih, oh)
+        }
         other => {
             return Err((
                 StatusCode::BAD_REQUEST,
@@ -1521,6 +1588,9 @@ async fn stats(
         (13, "GOVERNANCE_PROPOSAL"),
         (14, "GOVERNANCE_VOTE"),
         (15, "GOVERNANCE_RESULT"),
+        (64, "AGENT_REGISTER"),
+        (65, "AGENT_POLICY"),
+        (66, "AGENT_ACTION"),
     ];
     let db_counts = state.db.leaf_counts_by_type().unwrap_or_default();
     let mut type_counts = serde_json::Map::new();

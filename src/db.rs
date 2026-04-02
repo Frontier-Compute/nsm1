@@ -624,6 +624,57 @@ impl Db {
         )
     }
 
+    pub fn insert_agent_register_leaf(
+        &self,
+        agent_id: &str,
+        pubkey_hash: &str,
+        model_hash: &str,
+        policy_hash: &str,
+    ) -> Result<(MerkleLeafRecord, MerkleRootRecord)> {
+        let leaf_hash = hex::encode(crate::memo::hash_agent_register(
+            agent_id,
+            pubkey_hash,
+            model_hash,
+            policy_hash,
+        ));
+        self.insert_leaf_raw(MemoType::AgentRegister, &leaf_hash, agent_id, None)
+    }
+
+    pub fn insert_agent_policy_leaf(
+        &self,
+        agent_id: &str,
+        policy_version: u32,
+        rules_hash: &str,
+    ) -> Result<(MerkleLeafRecord, MerkleRootRecord)> {
+        let leaf_hash = hex::encode(crate::memo::hash_agent_policy(
+            agent_id,
+            policy_version,
+            rules_hash,
+        ));
+        self.insert_leaf_raw(MemoType::AgentPolicy, &leaf_hash, agent_id, None)
+    }
+
+    pub fn insert_agent_action_leaf(
+        &self,
+        agent_id: &str,
+        action_type: &str,
+        input_hash: &str,
+        output_hash: &str,
+    ) -> Result<(MerkleLeafRecord, MerkleRootRecord)> {
+        let leaf_hash = hex::encode(crate::memo::hash_agent_action(
+            agent_id,
+            action_type,
+            input_hash,
+            output_hash,
+        ));
+        self.insert_leaf_raw(
+            MemoType::AgentAction,
+            &leaf_hash,
+            agent_id,
+            Some(action_type),
+        )
+    }
+
     /// Get all Merkle leaves for a wallet hash (lifecycle timeline).
     pub fn get_leaves_by_wallet(&self, wallet_hash: &str) -> Result<Vec<MerkleLeafRecord>> {
         let conn = self.conn()?;

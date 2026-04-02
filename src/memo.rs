@@ -22,6 +22,9 @@ pub enum MemoType {
     GovernanceProposal = 0x0D,
     GovernanceVote = 0x0E,
     GovernanceResult = 0x0F,
+    AgentRegister = 0x40,
+    AgentPolicy = 0x41,
+    AgentAction = 0x42,
 }
 
 impl MemoType {
@@ -46,6 +49,9 @@ impl MemoType {
             0x0D => Ok(Self::GovernanceProposal),
             0x0E => Ok(Self::GovernanceVote),
             0x0F => Ok(Self::GovernanceResult),
+            0x40 => Ok(Self::AgentRegister),
+            0x41 => Ok(Self::AgentPolicy),
+            0x42 => Ok(Self::AgentAction),
             _ => Err(anyhow!("unknown memo type: 0x{value:02x}")),
         }
     }
@@ -67,6 +73,9 @@ impl MemoType {
             Self::GovernanceProposal => "GOVERNANCE_PROPOSAL",
             Self::GovernanceVote => "GOVERNANCE_VOTE",
             Self::GovernanceResult => "GOVERNANCE_RESULT",
+            Self::AgentRegister => "AGENT_REGISTER",
+            Self::AgentPolicy => "AGENT_POLICY",
+            Self::AgentAction => "AGENT_ACTION",
         }
     }
 
@@ -88,6 +97,9 @@ impl MemoType {
             "GOVERNANCE_PROPOSAL" => Ok(Self::GovernanceProposal),
             "GOVERNANCE_VOTE" => Ok(Self::GovernanceVote),
             "GOVERNANCE_RESULT" => Ok(Self::GovernanceResult),
+            "AGENT_REGISTER" => Ok(Self::AgentRegister),
+            "AGENT_POLICY" => Ok(Self::AgentPolicy),
+            "AGENT_ACTION" => Ok(Self::AgentAction),
             _ => Err(anyhow!("unknown memo label: {s}")),
         }
     }
@@ -290,6 +302,52 @@ pub fn hash_governance_result(wallet_hash: &str, proposal_id: &str, result_hash:
     payload.extend_from_slice(&(result_hash.len() as u16).to_be_bytes());
     payload.extend_from_slice(result_hash.as_bytes());
     hash_payload(MemoType::GovernanceResult, &payload)
+}
+
+pub fn hash_agent_register(
+    agent_id: &str,
+    pubkey_hash: &str,
+    model_hash: &str,
+    policy_hash: &str,
+) -> [u8; 32] {
+    let mut payload = Vec::new();
+    payload.extend_from_slice(&(agent_id.len() as u16).to_be_bytes());
+    payload.extend_from_slice(agent_id.as_bytes());
+    payload.extend_from_slice(&(pubkey_hash.len() as u16).to_be_bytes());
+    payload.extend_from_slice(pubkey_hash.as_bytes());
+    payload.extend_from_slice(&(model_hash.len() as u16).to_be_bytes());
+    payload.extend_from_slice(model_hash.as_bytes());
+    payload.extend_from_slice(&(policy_hash.len() as u16).to_be_bytes());
+    payload.extend_from_slice(policy_hash.as_bytes());
+    hash_payload(MemoType::AgentRegister, &payload)
+}
+
+pub fn hash_agent_policy(agent_id: &str, policy_version: u32, rules_hash: &str) -> [u8; 32] {
+    let mut payload = Vec::new();
+    payload.extend_from_slice(&(agent_id.len() as u16).to_be_bytes());
+    payload.extend_from_slice(agent_id.as_bytes());
+    payload.extend_from_slice(&policy_version.to_be_bytes());
+    payload.extend_from_slice(&(rules_hash.len() as u16).to_be_bytes());
+    payload.extend_from_slice(rules_hash.as_bytes());
+    hash_payload(MemoType::AgentPolicy, &payload)
+}
+
+pub fn hash_agent_action(
+    agent_id: &str,
+    action_type: &str,
+    input_hash: &str,
+    output_hash: &str,
+) -> [u8; 32] {
+    let mut payload = Vec::new();
+    payload.extend_from_slice(&(agent_id.len() as u16).to_be_bytes());
+    payload.extend_from_slice(agent_id.as_bytes());
+    payload.extend_from_slice(&(action_type.len() as u16).to_be_bytes());
+    payload.extend_from_slice(action_type.as_bytes());
+    payload.extend_from_slice(&(input_hash.len() as u16).to_be_bytes());
+    payload.extend_from_slice(input_hash.as_bytes());
+    payload.extend_from_slice(&(output_hash.len() as u16).to_be_bytes());
+    payload.extend_from_slice(output_hash.as_bytes());
+    hash_payload(MemoType::AgentAction, &payload)
 }
 
 pub fn merkle_root_memo(root_hash: &[u8; 32]) -> StructuredMemo {
