@@ -84,6 +84,12 @@ export class CrossPayAttestation {
       );
     }
 
+    if (swap.amountSourceZat < 0 || !Number.isFinite(swap.amountSourceZat)) {
+      throw new AttestationError(
+        "amountSourceZat must be a non-negative finite number"
+      );
+    }
+
     const eventType = "TRANSFER";
 
     const body = {
@@ -100,6 +106,7 @@ export class CrossPayAttestation {
         Authorization: `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(10_000),
     });
 
     if (!res.ok) {
@@ -111,7 +118,12 @@ export class CrossPayAttestation {
       );
     }
 
-    const data = await res.json();
+    let data: Record<string, unknown>;
+    try {
+      data = await res.json();
+    } catch {
+      throw new AttestationError("Failed to parse JSON response from ZAP1 API");
+    }
 
     return {
       leafHash: data.leaf_hash,
@@ -132,6 +144,12 @@ export class CrossPayAttestation {
    * from successful swaps in the Merkle tree.
    */
   async attestFailed(swap: CrossPaySwap): Promise<AttestationReceipt> {
+    if (swap.amountSourceZat < 0 || !Number.isFinite(swap.amountSourceZat)) {
+      throw new AttestationError(
+        "amountSourceZat must be a non-negative finite number"
+      );
+    }
+
     const failedSwap: CrossPaySwap = {
       ...swap,
       success: false,
@@ -151,6 +169,7 @@ export class CrossPayAttestation {
         Authorization: `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(10_000),
     });
 
     if (!res.ok) {
@@ -162,7 +181,12 @@ export class CrossPayAttestation {
       );
     }
 
-    const data = await res.json();
+    let data: Record<string, unknown>;
+    try {
+      data = await res.json();
+    } catch {
+      throw new AttestationError("Failed to parse JSON response from ZAP1 API");
+    }
 
     return {
       leafHash: data.leaf_hash,
@@ -186,7 +210,8 @@ export class CrossPayAttestation {
     serverVerified: boolean;
   }> {
     const res = await fetch(
-      `${this.baseUrl}/verify/${leafHash}/check`
+      `${this.baseUrl}/verify/${leafHash}/check`,
+      { signal: AbortSignal.timeout(10_000) }
     );
 
     if (res.status === 404) {
@@ -200,7 +225,12 @@ export class CrossPayAttestation {
       );
     }
 
-    const data = await res.json();
+    let data: Record<string, unknown>;
+    try {
+      data = await res.json();
+    } catch {
+      throw new AttestationError("Failed to parse JSON response from ZAP1 verify");
+    }
 
     return {
       valid: data.valid,
@@ -217,7 +247,8 @@ export class CrossPayAttestation {
    */
   async getProof(leafHash: string): Promise<Record<string, unknown> | null> {
     const res = await fetch(
-      `${this.baseUrl}/verify/${leafHash}/proof.json`
+      `${this.baseUrl}/verify/${leafHash}/proof.json`,
+      { signal: AbortSignal.timeout(10_000) }
     );
 
     if (res.status === 404) return null;
@@ -228,6 +259,10 @@ export class CrossPayAttestation {
       );
     }
 
-    return res.json();
+    try {
+      return await res.json();
+    } catch {
+      throw new AttestationError("Failed to parse JSON response from ZAP1 proof");
+    }
   }
 }

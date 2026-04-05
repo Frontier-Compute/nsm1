@@ -25,6 +25,14 @@ Integration point in Zodl iOS: `TransactionDetailsStore.swift` line 434 in the `
 
 Issue: [zodl-inc/zodl-ios#1670](https://github.com/zodl-inc/zodl-ios/issues/1670)
 
+### zodl-crossPay-attestation.ts
+
+TypeScript module for attesting CrossPay swaps (NEAR Intents) to ZAP1.  Zero dependencies.  Posts TRANSFER events and returns verifiable leaf hashes.
+
+### zodl-integration-guide.md
+
+Technical integration guide for Zodl developers.  Covers TypeScript, Kotlin (Android), and Swift (iOS) with code examples.
+
 ## How it works
 
 Both parsers detect the `ZAP1:{type}:{hash}` and `NSM1:{type}:{hash}` memo format. If a memo matches, the parser returns a structured object with:

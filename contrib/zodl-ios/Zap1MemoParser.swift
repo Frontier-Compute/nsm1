@@ -9,6 +9,20 @@ struct Zap1Attestation {
 
     var shortHash: String { String(hash.prefix(12)) + "..." }
     var isLegacy: Bool { prefix == "NSM1" }
+    var verifyUrl: String { "https://verify.frontiercompute.cash?leaf=\(hash)" }
+
+    private static let labels: [String: String] = [
+        "01": "Participant enrolled", "02": "Ownership verified",
+        "03": "Contract anchored", "04": "Machine activated",
+        "05": "Hosting paid", "06": "Shield renewed",
+        "07": "Ownership transferred", "08": "Participant exited",
+        "09": "Merkle root anchored", "0a": "Stake deposited",
+        "0b": "Stake withdrawn", "0c": "Reward recorded",
+        "0d": "Proposal submitted", "0e": "Vote cast",
+        "0f": "Result recorded"
+    ]
+
+    var label: String { Zap1Attestation.labels[typeHex] ?? "Attestation event" }
 
     // Compiled once, reused across all parse calls
     private static let pattern = try! NSRegularExpression(
@@ -28,6 +42,7 @@ struct Zap1Attestation {
 
     static func parse(_ memo: String) -> Zap1Attestation? {
         let trimmed = memo.trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "\0", with: "")
         let range = NSRange(trimmed.startIndex..., in: trimmed)
         guard let match = pattern.firstMatch(in: trimmed, range: range),
               let prefixRange = Range(match.range(at: 1), in: trimmed),
@@ -49,6 +64,6 @@ struct Zap1Attestation {
 
     static func format(_ memo: String) -> String? {
         guard let attestation = parse(memo) else { return nil }
-        return "ZAP1: \(attestation.event)  \(attestation.shortHash)"
+        return "\(attestation.prefix): \(attestation.event)  \(attestation.shortHash)"
     }
 }

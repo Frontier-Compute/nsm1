@@ -115,6 +115,11 @@ suspend fun attestSwap(
 
     conn.outputStream.bufferedWriter().use { it.write(body) }
 
+    if (conn.responseCode !in 200..299) {
+        val err = conn.errorStream?.bufferedReader()?.readText() ?: ""
+        throw IOException("ZAP1 API returned ${conn.responseCode}: $err")
+    }
+
     val response = conn.inputStream.bufferedReader().readText()
     val json = JSONObject(response)
     return json.getString("leaf_hash")
@@ -158,12 +163,16 @@ func attestSwap(
     request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
     let (data, response) = try await URLSession.shared.data(for: request)
-    guard let http = response as? HTTPURLResponse, http.statusCode == 201 else {
+    guard let http = response as? HTTPURLResponse,
+          (200...299).contains(http.statusCode) else {
         throw URLError(.badServerResponse)
     }
 
-    let json = try JSONSerialization.jsonObject(with: data) as! [String: Any]
-    return json["leaf_hash"] as! String
+    guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+          let leafHash = json["leaf_hash"] as? String else {
+        throw URLError(.cannotParseResponse)
+    }
+    return leafHash
 }
 
 // Usage

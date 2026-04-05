@@ -44,7 +44,7 @@ object Zap1MemoFormatter {
     )
 
     fun parse(memo: String): Attestation? {
-        val m = PATTERN.matchEntire(memo.trim()) ?: return null
+        val m = PATTERN.matchEntire(memo.trim().replace("\u0000", "")) ?: return null
         val typeHex = m.groupValues[2].lowercase()
         return Attestation(
             prefix = m.groupValues[1],
@@ -57,7 +57,7 @@ object Zap1MemoFormatter {
 
     fun format(memo: String): String? {
         val att = parse(memo) ?: return null
-        return "ZAP1: ${att.event}  ${att.shortHash}"
+        return "${att.prefix}: ${att.event}  ${att.shortHash}"
     }
 
     data class Attestation(
