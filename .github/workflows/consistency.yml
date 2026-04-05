@@ -1,0 +1,73 @@
+name: consistency
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: No stale event type counts
+        run: |
+          # Must not find old counts in docs
+          if grep -rn "\b9 event types\|\bnine event types\|\bnine deployed\|\btwelve event\|\b12 defined\|\b12 event types\|\b9 deployed" \
+            --include="*.md" --include="*.html" --include="*.jsx" \
+            --exclude-dir=node_modules --exclude-dir=target --exclude-dir=dist \
+            --exclude-dir=.git | grep -v "0x09\|Section 9\|type 9\|79 event"; then
+            echo "::error::Found stale event type counts"
+            exit 1
+          fi
+
+      - name: No emdashes
+        run: |
+          if grep -Prn '\x{2014}' --include="*.md" --include="*.rs" --include="*.kt" \
+            --include="*.swift" --include="*.sol" --include="*.html" --include="*.jsx" \
+            --exclude-dir=node_modules --exclude-dir=target --exclude-dir=.git .; then
+            echo "::error::Found emdash characters (U+2014)"
+            exit 1
+          fi
+
+      - name: No AI language
+        run: |
+          if grep -rin "comprehensive\|robust\|leverage\|seamless\|facilitates\|designed to\|intended to\|paving the way\|testament to\|underscores\|notably\|furthermore\|moreover" \
+            --include="*.md" --include="*.rs" --include="*.kt" --include="*.swift" \
+            --exclude-dir=node_modules --exclude-dir=target --exclude-dir=.git .; then
+            echo "::error::Found AI-sounding language"
+            exit 1
+          fi
+
+      - name: No AI tool references in code
+        run: |
+          if grep -rin "codex\|claude\|anthropic\|openai\|chatgpt" \
+            --include="*.rs" --include="*.kt" --include="*.swift" --include="*.sol" \
+            --exclude-dir=node_modules --exclude-dir=target --exclude-dir=.git .; then
+            echo "::error::Found AI tool references in source code"
+            exit 1
+          fi
+
+      - name: No grant references in source
+        run: |
+          if grep -rin "ZCG\|grant\|milestone\|evaluator" src/ tests/ 2>/dev/null; then
+            echo "::error::Found grant references in source code"
+            exit 1
+          fi
+
+      - name: No Nordic Shield branding in active text
+        run: |
+          if grep -rn "Nordic Shield" --include="*.md" --include="*.rs" --include="*.html" \
+            --exclude-dir=node_modules --exclude-dir=target --exclude-dir=.git . | \
+            grep -v "NordicShield_\|NordicShield_MRK\|personalization\|legacy\|pre-rename\|constant"; then
+            echo "::error::Found Nordic Shield product branding in active text"
+            exit 1
+          fi
+
+      - name: Consistent test vector field names
+        run: |
+          if grep -n "expected_leaf_hash" TEST_VECTORS.md 2>/dev/null; then
+            echo "::error::TEST_VECTORS.md uses inconsistent field name expected_leaf_hash (should be expected_hash)"
+            exit 1
+          fi

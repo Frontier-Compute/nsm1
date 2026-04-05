@@ -1,0 +1,11 @@
+--- a/modules/Sources/Features/TransactionDetails/TransactionDetailsStore.swift
++++ b/modules/Sources/Features/TransactionDetails/TransactionDetailsStore.swift
+@@ -431,7 +431,7 @@
+             case .memosLoaded(let memos):
+                 state.areMessagesResolved = true
+                 state.$transactionMemos.withLock {
+-                    $0[state.transaction.id] = memos.compactMap { $0.toString() }
++                    $0[state.transaction.id] = memos.compactMap { $0.toString() }.map { Zap1Attestation.format($0) ?? $0 }
+                 }
+                 state.messageStates = state.memos.map {
+                     $0.count < State.Constants.messageExpandThreshold ? .short : .longCollapsed

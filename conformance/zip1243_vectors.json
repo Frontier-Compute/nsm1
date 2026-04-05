@@ -1,0 +1,352 @@
+{
+  "suite": "ZIP 1243 Conformance Vectors",
+  "version": "1.0.0",
+  "date": "2026-04-02",
+  "description": "Published test vectors for ZIP 1243 (ZAP1 Structured Attestation Protocol). Each vector maps to a specific MUST/SHOULD requirement in the ZIP draft.",
+  "leaf_hash_function": "BLAKE2b-256",
+  "leaf_personalization": "NordicShield_",
+  "leaf_personalization_padded_hex": "4e6f72646963536869656c645f000000",
+  "node_hash_function": "BLAKE2b-256",
+  "node_personalization": "NordicShield_MRK",
+  "node_personalization_hex": "4e6f72646963536869656c645f4d524b",
+
+  "section_1_memo_envelope": {
+    "requirement": "Binary payload layout and memo encoding (ZIP 1243 Section: Binary Payload Layout)",
+    "vectors": [
+      {
+        "id": "1.1",
+        "description": "Type byte 0x01 is valid (PROGRAM_ENTRY)",
+        "type_byte": 1,
+        "valid": true
+      },
+      {
+        "id": "1.2",
+        "description": "Type byte 0x09 is valid (MERKLE_ROOT)",
+        "type_byte": 9,
+        "valid": true
+      },
+      {
+        "id": "1.3",
+        "description": "Type byte 0x0F is valid (GOVERNANCE_RESULT)",
+        "type_byte": 15,
+        "valid": true
+      },
+      {
+        "id": "1.4",
+        "description": "Type byte 0x00 is invalid (below range)",
+        "type_byte": 0,
+        "valid": false
+      },
+      {
+        "id": "1.5",
+        "description": "Type byte 0x46 is invalid (above defined range)",
+        "type_byte": 70,
+        "valid": false
+      },
+      {
+        "id": "1.6",
+        "description": "Memo wire format fits 512-byte memo field",
+        "memo_string": "ZAP1:01:075b00df286038a7b3f6bb70054df61343e3481fba579591354a00214e9e019b",
+        "byte_length": 72,
+        "max_memo_bytes": 512,
+        "fits": true
+      },
+      {
+        "id": "1.7",
+        "description": "Binary payload layout version byte",
+        "version_byte": 1,
+        "comment": "First byte of binary layout MUST be 0x01"
+      },
+      {
+        "id": "1.8",
+        "description": "Integers MUST be big-endian",
+        "value": 2026,
+        "big_endian_u32_hex": "000007ea"
+      }
+    ]
+  },
+
+  "section_2_hash_construction": {
+    "requirement": "BLAKE2b-256 with NordicShield_ personalization (ZIP 1243 Section: Hash Construction)",
+    "personalization_bytes": "NordicShield_",
+    "personalization_length": 13,
+    "personalization_padded_to_16": "NordicShield_\\x00\\x00\\x00",
+    "digest_size": 32,
+    "vectors": [
+      {
+        "id": "2.1",
+        "event_type": "PROGRAM_ENTRY",
+        "type_byte": "0x01",
+        "construction": "BLAKE2b_32(0x01 || wallet_hash)",
+        "input_fields": {"wallet_hash": "wallet_abc"},
+        "expected_hash": "344a05bf81faf6e2d54a0e52ea0267aff0244998eb1ee27adf5627413e92f089"
+      },
+      {
+        "id": "2.2",
+        "event_type": "PROGRAM_ENTRY",
+        "type_byte": "0x01",
+        "construction": "BLAKE2b_32(0x01 || wallet_hash)",
+        "input_fields": {"wallet_hash": "e2e_wallet_20260327"},
+        "expected_hash": "075b00df286038a7b3f6bb70054df61343e3481fba579591354a00214e9e019b"
+      },
+      {
+        "id": "2.3",
+        "event_type": "PROGRAM_ENTRY",
+        "type_byte": "0x01",
+        "construction": "BLAKE2b_32(0x01 || wallet_hash)",
+        "input_fields": {"wallet_hash": "test_wallet_abc"},
+        "expected_hash": "771fd5dbf5245e22a43218e4312f9a6e9b020a03a1617e70ee91d10914e82507"
+      },
+      {
+        "id": "2.4",
+        "event_type": "OWNERSHIP_ATTEST",
+        "type_byte": "0x02",
+        "construction": "BLAKE2b_32(0x02 || len(wallet_hash) || wallet_hash || len(serial_number) || serial_number)",
+        "length_prefix": "2-byte big-endian",
+        "input_fields": {"wallet_hash": "wallet_abc", "serial_number": "Z15P-2026-001"},
+        "expected_hash": "5d77b9a3435948a98099267e510a14663cc0fa80afd2a3ee5fb4363f6ecdfa13"
+      },
+      {
+        "id": "2.5",
+        "event_type": "OWNERSHIP_ATTEST",
+        "type_byte": "0x02",
+        "construction": "BLAKE2b_32(0x02 || len(wallet_hash) || wallet_hash || len(serial_number) || serial_number)",
+        "input_fields": {"wallet_hash": "e2e_wallet_20260327", "serial_number": "Z15P-E2E-001"},
+        "expected_hash": "de62554ad3867a59895befa7216686c923fc86245231e8fb6bd709a20e1fd133"
+      },
+      {
+        "id": "2.6",
+        "event_type": "CONTRACT_ANCHOR",
+        "type_byte": "0x03",
+        "construction": "BLAKE2b_32(0x03 || len(serial_number) || serial_number || len(contract_sha256) || contract_sha256)",
+        "input_fields": {"serial_number": "Z15P-2026-001", "contract_sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"},
+        "expected_hash": "ae15a6e4afceee1d6339690204f55d4c1336339ee4736147b3a0760d45c2bf04"
+      },
+      {
+        "id": "2.7",
+        "event_type": "DEPLOYMENT",
+        "type_byte": "0x04",
+        "construction": "BLAKE2b_32(0x04 || len(serial_number) || serial_number || len(facility_id) || facility_id || timestamp_be)",
+        "input_fields": {"serial_number": "Z15P-2026-001", "facility_id": "hamus-mo-i-rana", "timestamp": 1711843200},
+        "expected_hash": "f265b9a06a61b2b8c6eeed7fc00c7aa686ad511053467815bf1f1037d460e1f1"
+      },
+      {
+        "id": "2.8",
+        "event_type": "HOSTING_PAYMENT",
+        "type_byte": "0x05",
+        "construction": "BLAKE2b_32(0x05 || len(serial_number) || serial_number || month_be(u32) || year_be(u32))",
+        "input_fields": {"serial_number": "Z15P-2026-001", "month": 7, "year": 2026},
+        "expected_hash": "6fe67554ae4108215a05d2e6f0e24c15fd7d5846ebd653618eff498f1be41a4f"
+      },
+      {
+        "id": "2.9",
+        "event_type": "HOSTING_PAYMENT",
+        "type_byte": "0x05",
+        "construction": "BLAKE2b_32(0x05 || len(serial_number) || serial_number || month_be(u32) || year_be(u32))",
+        "input_fields": {"serial_number": "Z15P-TEST-001", "month": 3, "year": 2026},
+        "expected_hash": "dac74f263c985f808aa398d05500f4b6515875fa627cd0c85d5a82ea8b383367"
+      },
+      {
+        "id": "2.10",
+        "event_type": "SHIELD_RENEWAL",
+        "type_byte": "0x06",
+        "construction": "BLAKE2b_32(0x06 || len(wallet_hash) || wallet_hash || year_be(u32))",
+        "input_fields": {"wallet_hash": "wallet_abc", "year": 2027},
+        "expected_hash": "9f49ece77e800ac211f84f1695bea91bc4c93d228ddbce57901b179ea12e9e26"
+      },
+      {
+        "id": "2.11",
+        "event_type": "TRANSFER",
+        "type_byte": "0x07",
+        "construction": "BLAKE2b_32(0x07 || len(old_wallet) || old_wallet || len(new_wallet) || new_wallet || len(serial_number) || serial_number)",
+        "input_fields": {"old_wallet_hash": "wallet_abc", "new_wallet_hash": "wallet_xyz", "serial_number": "Z15P-2026-001"},
+        "expected_hash": "abcc3e0af84d0a3f0ebdb0cd22fc61234e6355c4e77e8b6cdabb86f1ee70a1ec"
+      },
+      {
+        "id": "2.12",
+        "event_type": "EXIT",
+        "type_byte": "0x08",
+        "construction": "BLAKE2b_32(0x08 || len(wallet_hash) || wallet_hash || len(serial_number) || serial_number || timestamp_be(u64))",
+        "input_fields": {"wallet_hash": "wallet_abc", "serial_number": "Z15P-2026-001", "timestamp": 1714521600},
+        "expected_hash": "4e024461b940fb02a31722f60d2a17b667c9caf86e1d4f4e751123c20c6bcaf5"
+      },
+      {
+        "id": "2.13",
+        "event_type": "MERKLE_ROOT",
+        "type_byte": "0x09",
+        "construction": "raw 32-byte Merkle root (no BLAKE2b wrapping)",
+        "input_fields": {"root_hash": "024e36515ea30efc15a0a7962dd8f677455938079430b9eab174f46a4328a07a"},
+        "expected_hash": "024e36515ea30efc15a0a7962dd8f677455938079430b9eab174f46a4328a07a"
+      },
+      {
+        "id": "2.14",
+        "event_type": "STAKING_DEPOSIT",
+        "type_byte": "0x0A",
+        "construction": "BLAKE2b_32(0x0A || len(wallet_hash) || wallet_hash || amount_zat_be(u64) || len(validator_id) || validator_id)",
+        "input_fields": {"wallet_hash": "crosslink_validator_001", "amount_zat": 1000000000, "validator_id": "validator-london-01"},
+        "expected_hash": "94473f27ed59a1cca8353a5e26127dd61b3f23c67320c5f1c458e3dbc0d61803"
+      },
+      {
+        "id": "2.15",
+        "event_type": "STAKING_WITHDRAW",
+        "type_byte": "0x0B",
+        "construction": "BLAKE2b_32(0x0B || len(wallet_hash) || wallet_hash || amount_zat_be(u64) || len(validator_id) || validator_id)",
+        "input_fields": {"wallet_hash": "crosslink_validator_001", "amount_zat": 1000000000, "validator_id": "validator-london-01"},
+        "expected_hash": "d8e0ddf181d0ac7e9a3979a0c2f413c7e38f4cc43960df65b8bdb6fa8cecf221"
+      },
+      {
+        "id": "2.16",
+        "event_type": "STAKING_REWARD",
+        "type_byte": "0x0C",
+        "construction": "BLAKE2b_32(0x0C || len(wallet_hash) || wallet_hash || amount_zat_be(u64) || epoch_be(u32))",
+        "input_fields": {"wallet_hash": "crosslink_validator_001", "amount_zat": 312500, "epoch": 1},
+        "expected_hash": "22371dd6f20d531631e331dc6ff27cd633e6eee9c92b3df1418da53885aaec43"
+      },
+      {
+        "id": "2.17",
+        "event_type": "GOVERNANCE_PROPOSAL",
+        "type_byte": "0x0D",
+        "construction": "BLAKE2b_32(0x0D || len(wallet_hash) || wallet_hash || len(proposal_id) || proposal_id || len(proposal_hash) || proposal_hash)",
+        "input_fields": {"wallet_hash": "dao_op", "proposal_id": "prop-001", "proposal_hash": "abcdef1234"},
+        "expected_hash": "a487c25f5867a9e3760c45ae7eed24d84e771568f1826a889ccd94b3c7c3a5b5"
+      },
+      {
+        "id": "2.18",
+        "event_type": "GOVERNANCE_VOTE",
+        "type_byte": "0x0E",
+        "construction": "BLAKE2b_32(0x0E || len(wallet_hash) || wallet_hash || len(proposal_id) || proposal_id || len(vote_commitment) || vote_commitment)",
+        "input_fields": {"wallet_hash": "voter_a", "proposal_id": "prop-001", "vote_commitment": "commitment_hash_a"},
+        "expected_hash": "eae1f9926e3c60152d20c433a61ed478f9ac16d5bad7d07a257d5a3da05c40b7"
+      },
+      {
+        "id": "2.19",
+        "event_type": "GOVERNANCE_RESULT",
+        "type_byte": "0x0F",
+        "construction": "BLAKE2b_32(0x0F || len(wallet_hash) || wallet_hash || len(proposal_id) || proposal_id || len(result_hash) || result_hash)",
+        "input_fields": {"wallet_hash": "dao_op", "proposal_id": "prop-001", "result_hash": "tally_hash"},
+        "expected_hash": "6f698f731247c2b6a50c46ba471b52e812837725ec6113a53cca6b649ce24ce1"
+      }
+    ]
+  },
+
+  "section_3_merkle_tree": {
+    "requirement": "Binary Merkle tree with BLAKE2b-256 and NordicShield_MRK personalization (ZIP 1243 Section: Merkle Tree Commitments)",
+    "vectors": [
+      {
+        "id": "3.1",
+        "description": "Empty tree - root is 32 zero bytes",
+        "leaves": [],
+        "expected_root": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "id": "3.2",
+        "description": "Single leaf - root equals the leaf hash",
+        "leaves": ["075b00df286038a7b3f6bb70054df61343e3481fba579591354a00214e9e019b"],
+        "expected_root": "075b00df286038a7b3f6bb70054df61343e3481fba579591354a00214e9e019b"
+      },
+      {
+        "id": "3.3",
+        "description": "Two-leaf tree from mainnet anchor at block 3,286,631",
+        "leaves": [
+          "075b00df286038a7b3f6bb70054df61343e3481fba579591354a00214e9e019b",
+          "de62554ad3867a59895befa7216686c923fc86245231e8fb6bd709a20e1fd133"
+        ],
+        "expected_root": "024e36515ea30efc15a0a7962dd8f677455938079430b9eab174f46a4328a07a"
+      },
+      {
+        "id": "3.4",
+        "description": "Three-leaf tree - odd cardinality duplicates final node",
+        "leaves": [
+          "075b00df286038a7b3f6bb70054df61343e3481fba579591354a00214e9e019b",
+          "de62554ad3867a59895befa7216686c923fc86245231e8fb6bd709a20e1fd133",
+          "344a05bf81faf6e2d54a0e52ea0267aff0244998eb1ee27adf5627413e92f089"
+        ],
+        "expected_root": "8e58a2a20a7e846031f37eaf135fe853bc382db9ceee880252363ae8139c3dde",
+        "comment": "Third leaf is PROGRAM_ENTRY(wallet_abc). At layer 1: node01 = H(leaf0||leaf1), node2dup = H(leaf2||leaf2). Root = H(node01||node2dup)."
+      }
+    ]
+  },
+
+  "section_4_anchor_memo": {
+    "requirement": "Anchor memo uses type 0x09, payload is raw 32-byte root (ZIP 1243 Section: On-Chain Anchoring)",
+    "vectors": [
+      {
+        "id": "4.1",
+        "description": "MERKLE_ROOT memo wire format",
+        "type_byte": "0x09",
+        "root_hash": "024e36515ea30efc15a0a7962dd8f677455938079430b9eab174f46a4328a07a",
+        "expected_memo": "ZAP1:09:024e36515ea30efc15a0a7962dd8f677455938079430b9eab174f46a4328a07a"
+      },
+      {
+        "id": "4.2",
+        "description": "PROGRAM_ENTRY memo wire format",
+        "type_byte": "0x01",
+        "payload_hash": "075b00df286038a7b3f6bb70054df61343e3481fba579591354a00214e9e019b",
+        "expected_memo": "ZAP1:01:075b00df286038a7b3f6bb70054df61343e3481fba579591354a00214e9e019b"
+      },
+      {
+        "id": "4.3",
+        "description": "Legacy NSM1 prefix accepted during decode",
+        "memo_string": "NSM1:01:075b00df286038a7b3f6bb70054df61343e3481fba579591354a00214e9e019b",
+        "decoded_type": "0x01",
+        "decoded_hash": "075b00df286038a7b3f6bb70054df61343e3481fba579591354a00214e9e019b"
+      }
+    ]
+  },
+
+  "section_5_verification": {
+    "requirement": "Merkle proof verification and proof bundle structure (ZIP 1243 Section: Verification Procedure)",
+    "vectors": [
+      {
+        "id": "5.1",
+        "description": "Valid two-leaf proof - OWNERSHIP_ATTEST with left sibling",
+        "leaf_hash": "de62554ad3867a59895befa7216686c923fc86245231e8fb6bd709a20e1fd133",
+        "proof_path": [
+          {"hash": "075b00df286038a7b3f6bb70054df61343e3481fba579591354a00214e9e019b", "position": "left"}
+        ],
+        "expected_root": "024e36515ea30efc15a0a7962dd8f677455938079430b9eab174f46a4328a07a",
+        "valid": true
+      },
+      {
+        "id": "5.2",
+        "description": "Invalid proof - wrong root",
+        "leaf_hash": "de62554ad3867a59895befa7216686c923fc86245231e8fb6bd709a20e1fd133",
+        "proof_path": [
+          {"hash": "075b00df286038a7b3f6bb70054df61343e3481fba579591354a00214e9e019b", "position": "left"}
+        ],
+        "expected_root": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "valid": false
+      },
+      {
+        "id": "5.3",
+        "description": "Proof bundle required fields",
+        "required_fields": ["protocol", "version", "leaf", "proof", "root", "anchor"],
+        "leaf_required": ["hash", "event_type", "wallet_hash"],
+        "root_required": ["hash", "leaf_count"],
+        "anchor_required": ["txid", "height"]
+      }
+    ]
+  },
+
+  "section_6_mainnet_reference": {
+    "requirement": "Cross-implementation validation against mainnet anchor",
+    "first_anchor": {
+      "txid": "98e1d6a01614c464c237f982d9dc2138c5f8aa08342f67b867a18a4ce998af9a",
+      "height": 3286631,
+      "root": "024e36515ea30efc15a0a7962dd8f677455938079430b9eab174f46a4328a07a"
+    },
+    "leaves_in_first_anchor": [
+      {
+        "event_type": "PROGRAM_ENTRY",
+        "wallet_hash": "e2e_wallet_20260327",
+        "expected_hash": "075b00df286038a7b3f6bb70054df61343e3481fba579591354a00214e9e019b"
+      },
+      {
+        "event_type": "OWNERSHIP_ATTEST",
+        "wallet_hash": "e2e_wallet_20260327",
+        "serial_number": "Z15P-E2E-001",
+        "expected_hash": "de62554ad3867a59895befa7216686c923fc86245231e8fb6bd709a20e1fd133"
+      }
+    ]
+  }
+}
