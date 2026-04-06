@@ -19,6 +19,7 @@ use crate::config::Config;
 use crate::db::Db;
 use crate::memo::merkle_root_memo;
 use crate::merkle::decode_hash;
+use crate::wallet::AnchorWallet;
 
 /// Maximum consecutive failures before capping backoff.
 const MAX_BACKOFF_MINUTES: u64 = 60;
@@ -55,9 +56,9 @@ impl AnchorState {
 }
 
 /// Run the anchor automation loop. Call from main alongside the scanner.
-pub async fn anchor_loop(config: Arc<Config>, db: Arc<Db>) {
-    if !config.anchor_enabled {
-        tracing::info!("Anchor automation disabled (ANCHOR_ZINGO_CLI not set)");
+pub async fn anchor_loop(config: Arc<Config>, db: Arc<Db>, wallet: Option<Arc<AnchorWallet>>) {
+    if !config.anchor_enabled && wallet.is_none() {
+        tracing::info!("Anchor automation disabled (no wallet and ANCHOR_ZINGO_CLI not set)");
         return;
     }
 
@@ -83,14 +84,19 @@ pub async fn anchor_loop(config: Arc<Config>, db: Arc<Db>) {
             }
         }
 
-        if let Err(e) = maybe_anchor(&config, &db, &state).await {
+        if let Err(e) = maybe_anchor(&config, &db, &state, wallet.as_deref()).await {
             tracing::warn!("Anchor check error: {:#}", e);
         }
     }
 }
 
 /// Check if anchoring is needed and execute if so.
-async fn maybe_anchor(config: &Config, db: &Arc<Db>, state: &AnchorState) -> Result<()> {
+async fn maybe_anchor(
+    config: &Config,
+    db: &Arc<Db>,
+    state: &AnchorState,
+    wallet: Option<&AnchorWallet>,
+) -> Result<()> {
     let unanchored = db.unanchored_leaf_count()?;
     if unanchored == 0 {
         return Ok(());
@@ -136,7 +142,7 @@ async fn maybe_anchor(config: &Config, db: &Arc<Db>, state: &AnchorState) -> Res
         return Ok(());
     }
 
-    match run_anchor(config, &**db).await {
+    match run_anchor(config, &**db, wallet).await {
         Ok(txid) => {
             state.record_success();
             tracing::info!("Anchor broadcast success: txid={}", txid);
@@ -208,12 +214,56 @@ async fn maybe_anchor(config: &Config, db: &Arc<Db>, state: &AnchorState) -> Res
     Ok(())
 }
 
-/// Execute the anchor broadcast via zingo-cli.
-async fn run_anchor(config: &Config, db: &Db) -> Result<String> {
+/// Execute the anchor broadcast via embedded wallet (primary) or zingo-cli (fallback).
+async fn run_anchor(config: &Config, db: &Db, wallet: Option<&AnchorWallet>) -> Result<String> {
+    // Primary path: embedded wallet
+    if let Some(w) = wallet {
+        let root = db
+            .current_merkle_root()?
+            .ok_or_else(|| anyhow::anyhow!("No Merkle root to anchor"))?;
+
+        tracing::info!(
+            "Anchoring root {} ({} leaves) via embedded wallet",
+            root.root_hash,
+            root.leaf_count
+        );
+
+        let height = get_chain_height(&config.zebra_rpc_url).await?;
+        let params = zcash_protocol::consensus::MainNetwork;
+        let (txid, raw_hex, spent_pos) = w.build_anchor_tx(&params, config, db, height)?;
+
+        // Broadcast via Zebra sendrawtransaction
+        let resp = reqwest::Client::new()
+            .post(&config.zebra_rpc_url)
+            .json(&serde_json::json!({
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "sendrawtransaction",
+                "params": [raw_hex]
+            }))
+            .send()
+            .await
+            .context("Zebra sendrawtransaction request failed")?;
+
+        let body: serde_json::Value = resp.json().await?;
+        if let Some(err) = body.get("error") {
+            return Err(anyhow::anyhow!("sendrawtransaction error: {}", err));
+        }
+
+        // Mark note as spent
+        w.mark_spent_at_position(spent_pos)?;
+
+        db.record_merkle_anchor(&root.root_hash, &txid, None)?;
+        tracing::info!("Anchor recorded: root={} txid={}", root.root_hash, txid);
+
+        return Ok(txid);
+    }
+
+    // Fallback: zingo-cli
     let zingo_cli = config
         .anchor_zingo_cli
         .as_deref()
-        .ok_or_else(|| anyhow::anyhow!("ANCHOR_ZINGO_CLI not configured"))?;
+        .ok_or_else(|| anyhow::anyhow!("No embedded wallet and ANCHOR_ZINGO_CLI not configured"))?;
     let server = config
         .anchor_server
         .as_deref()
@@ -275,6 +325,26 @@ async fn run_anchor(config: &Config, db: &Db) -> Result<String> {
 }
 
 /// Extract a 64-char hex txid from command output.
+async fn get_chain_height(zebra_url: &str) -> Result<u32> {
+    let client = reqwest::Client::new();
+    let resp = client
+        .post(zebra_url)
+        .json(&serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "getblockcount",
+            "params": []
+        }))
+        .send()
+        .await
+        .context("getblockcount request failed")?;
+    let body: serde_json::Value = resp.json().await?;
+    body["result"]
+        .as_u64()
+        .map(|h| h as u32)
+        .ok_or_else(|| anyhow::anyhow!("getblockcount returned no result"))
+}
+
 fn extract_txid(output: &str) -> Option<String> {
     output
         .split(|c: char| c.is_whitespace() || c == '"' || c == '\'' || c == ',' || c == ':')

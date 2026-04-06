@@ -10,5 +10,6 @@ pub mod models;
 pub mod node;
 pub mod notify;
 pub mod scanner;
+pub mod wallet;
 pub mod webhook;
 pub mod zip302;

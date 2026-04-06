@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use tracing_subscriber::EnvFilter;
-use zap1::{anchor, api, config, db, foreman, keys, node, scanner};
+use zap1::{anchor, api, config, db, foreman, keys, node, scanner, wallet};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -53,11 +53,39 @@ async fn main() -> Result<()> {
         scanner::scan_loop(scanner_config, scanner_db, scanner_ufvk, scanner_backend).await;
     });
 
-    // Spawn anchor automation (replaces auto_anchor.sh cron)
+    // Initialize embedded anchor wallet if ANCHOR_SEED is set
+    let anchor_wallet = if let Some(ref seed) = config.anchor_seed {
+        match wallet::AnchorWallet::new(&config.network, seed) {
+            Ok(w) => {
+                let w = Arc::new(w);
+                let wc = w.clone();
+                let url = config.zebra_rpc_url.clone();
+                let height = config.scan_from_height;
+                tokio::spawn(async move {
+                    if let Err(e) = wc.init_from_zebra(&url, height).await {
+                        tracing::error!("Anchor wallet init failed: {:#}", e);
+                    } else {
+                        tracing::info!("Anchor wallet: balance {} zat", wc.balance());
+                    }
+                });
+                Some(w)
+            }
+            Err(e) => {
+                tracing::warn!("Anchor wallet creation failed: {:#}", e);
+                None
+            }
+        }
+    } else {
+        tracing::info!("No ANCHOR_SEED,  embedded wallet disabled");
+        None
+    };
+
+    // Spawn anchor automation
     let anchor_config = config.clone();
     let anchor_db = db.clone();
+    let anchor_w = anchor_wallet.clone();
     tokio::spawn(async move {
-        anchor::anchor_loop(anchor_config, anchor_db).await;
+        anchor::anchor_loop(anchor_config, anchor_db, anchor_w).await;
     });
 
     // Start API

@@ -37,3 +37,18 @@ pub fn unified_address_at(
     ufvk.address(div_idx, UnifiedAddressRequest::ORCHARD)
         .map_err(|e| anyhow::anyhow!("Failed to generate address at index {}: {:?}", index, e))
 }
+
+/// Derive a UnifiedSpendingKey from a hex seed string.
+pub fn spending_key_from_seed<P: zcash_protocol::consensus::Parameters>(
+    params: &P,
+    seed_hex: &str,
+) -> anyhow::Result<zcash_keys::keys::UnifiedSpendingKey> {
+    let seed = hex::decode(seed_hex)?;
+    let usk = zcash_keys::keys::UnifiedSpendingKey::from_seed(
+        params,
+        &seed,
+        zip32::AccountId::ZERO,
+    )
+    .map_err(|e| anyhow::anyhow!("Failed to derive spending key: {:?}", e))?;
+    Ok(usk)
+}

@@ -78,6 +78,15 @@ zap1-verify = { path = "zap1-verify" }
 
 # Universal memo decoder
 zcash-memo-decode = "0.1.0"
+rand_core = "0.10.0"
+incrementalmerkletree = "0.8.2"
+shardtree = "0.6.2"
+sapling-crypto = "0.6.2"
+zcash_note_encryption = "0.4.1"
+zcash_transparent = "0.6.3"
+jubjub = "0.10.0"
+bls12_381 = "0.8.0"
+rand = "0.10.0"
 
 [dev-dependencies]
 tower = "0.5"
