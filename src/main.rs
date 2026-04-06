@@ -71,7 +71,25 @@ async fn main() -> Result<()> {
         None
     };
 
-    // Spawn scanner (after wallet init so it can feed commitments)
+    // Spawn wallet recovery scan (independent from main scanner)
+    // The main scanner's last_scanned_height is at tip,  so it skips historical blocks.
+    // The wallet needs to scan from seed height to find its notes.
+    if let Some(ref w) = anchor_wallet {
+        let recovery_wallet = w.clone();
+        let recovery_backend = backend.clone();
+        let recovery_config = config.clone();
+        tokio::spawn(async move {
+            if let Err(e) = scanner::wallet_recovery_scan(
+                &*recovery_backend,
+                &recovery_config,
+                &recovery_wallet,
+            ).await {
+                tracing::error!("Wallet recovery scan failed: {:#}", e);
+            }
+        });
+    }
+
+    // Spawn scanner (after wallet init so it can feed commitments for NEW blocks)
     let scanner_config = config.clone();
     let scanner_db = db.clone();
     let scanner_ufvk = ufvk.clone();

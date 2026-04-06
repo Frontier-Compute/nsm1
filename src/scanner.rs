@@ -238,6 +238,87 @@ async fn scan_once(
     Ok(())
 }
 
+/// Independent wallet recovery scan.  Runs once on startup.
+/// Scans from seed height to chain tip,  feeding every block's raw TXs
+/// to the wallet for commitment tree tracking and note detection.
+/// This is separate from the main scanner because the main scanner's
+/// last_scanned_height is already at tip and skips historical blocks.
+pub async fn wallet_recovery_scan(
+    backend: &dyn NodeBackend,
+    config: &Config,
+    wallet: &AnchorWallet,
+) -> Result<()> {
+    if wallet.recovery_done() {
+        return Ok(());
+    }
+
+    let chain_height = backend.get_chain_height().await?;
+    let start = config.scan_from_height;
+
+    if start >= chain_height {
+        wallet.mark_recovery_done();
+        return Ok(());
+    }
+
+    let total = chain_height - start;
+    tracing::info!(
+        "Wallet recovery: rescanning {} to {} for missed notes ({} blocks)",
+        start,
+        chain_height,
+        total
+    );
+
+    let batch_size = 100u32;
+    let mut current = start;
+
+    while current <= chain_height {
+        let end = (current + batch_size - 1).min(chain_height);
+
+        for height in current..=end {
+            let txids = match backend.get_block_txids(height).await {
+                Ok(t) => t,
+                Err(_) => continue,
+            };
+
+            let mut block_raw_txs: Vec<(String, Vec<u8>)> = Vec::new();
+            for txid_str in &txids {
+                if let Ok(raw) = backend.get_raw_transaction(txid_str).await {
+                    block_raw_txs.push((txid_str.clone(), raw));
+                }
+            }
+
+            if !block_raw_txs.is_empty() {
+                if let Err(e) = wallet.process_block_commitments(height, &block_raw_txs, &config.network) {
+                    tracing::debug!("Wallet recovery block {}: {}", height, e);
+                }
+            }
+        }
+
+        current = end + 1;
+
+        // Log progress every 1000 blocks
+        if (current - start) % 1000 < batch_size {
+            let progress = ((current - start) as f64 / total as f64 * 100.0).min(100.0);
+            tracing::info!(
+                "Wallet recovery: {:.1}% ({}/{}) balance {} zat",
+                progress,
+                current - start,
+                total,
+                wallet.balance()
+            );
+        }
+    }
+
+    wallet.mark_recovery_done();
+    tracing::info!(
+        "Wallet recovery complete: balance {} zat,  {} notes",
+        wallet.balance(),
+        wallet.unspent_count()
+    );
+
+    Ok(())
+}
+
 /// Scan the mempool for unconfirmed transactions. Detects payments
 /// before they're mined, giving ~75 seconds faster response.
 async fn scan_mempool(
