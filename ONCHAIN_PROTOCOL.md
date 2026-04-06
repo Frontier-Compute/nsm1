@@ -1,8 +1,8 @@
 # ONCHAIN_PROTOCOL.md
 
-**Specification Version: 3.0.0-draft**
+**Specification Version: 3.0.0**
 
-**Version:** 2.2.0  
+**Version:** 3.0.0  
 **Date:** 2026-03-28  
 **Status:** Deployed on Zcash mainnet
 
@@ -379,7 +379,7 @@ The credential profile depends on the proof profile and is not expected to deplo
 
 ## Changelog
 
-### 3.0.0-draft (2026-03-31)
+### 3.0.0 (2026-03-31)
 - Added type byte prefix to leaf hash construction (Section 3)
 - Renumbered sections 12-15 to fix gap from removed sections
 - Clarified domain separation constants

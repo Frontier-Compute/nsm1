@@ -64,6 +64,8 @@ pub struct AppState {
     pub foreman: Option<Arc<ForemanClient>>,
 }
 
+pub const PROTOCOL_VERSION: &str = "3.0.0";
+
 pub fn router(state: AppState) -> Router {
     Router::new()
         .route("/invoice", post(create_invoice))
@@ -998,7 +1000,7 @@ async fn recent_events(
 async fn protocol_info() -> Json<serde_json::Value> {
     Json(serde_json::json!({
         "protocol": "ZAP1",
-        "version": "3.0.0",
+        "version": PROTOCOL_VERSION,
         "event_types": 18,
         "deployed_types": 15,
         "reserved_types": 3,

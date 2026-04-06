@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: ZAP1 Attestation Protocol
   description: Read-only API for Zcash on-chain attestation discovery, verification, and memo classification.
-  version: "3.0.0-draft"
+  version: "3.0.0"
   license:
     name: MIT
     url: https://github.com/Frontier-Compute/zap1/blob/main/LICENSE
@@ -33,13 +33,13 @@ paths:
                     example: ZAP1
                   version:
                     type: string
-                    example: "2.2.0"
+                    example: "3.0.0"
                   event_types:
                     type: integer
-                    example: 12
+                    example: 18
                   deployed_types:
                     type: integer
-                    example: 9
+                    example: 15
                   reserved_types:
                     type: integer
                     example: 3

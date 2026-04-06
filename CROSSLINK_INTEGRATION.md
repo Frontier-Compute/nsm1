@@ -10,7 +10,7 @@ Crosslink introduces proof-of-stake to Zcash. Validators lock ZEC as collateral,
 2. A validator withdraws stake
 3. A validator receives a reward
 
-ZAP1 already has event types for these: STAKING_DEPOSIT (0x0A), STAKING_WITHDRAW (0x0B), STAKING_REWARD (0x0C). They're reserved in the spec and implemented in the API as of v3.0.0-draft.
+ZAP1 already has event types for these: STAKING_DEPOSIT (0x0A), STAKING_WITHDRAW (0x0B), STAKING_REWARD (0x0C). They're reserved in the spec and implemented in the API as of v3.0.0.
 
 ## Event types
 
