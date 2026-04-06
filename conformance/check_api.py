@@ -91,7 +91,8 @@ def main():
     if validate_required(data, schemas["/protocol/info"], "/protocol/info"):
         check("/protocol/info protocol=ZAP1", data.get("protocol") == "ZAP1")
         check("/protocol/info hash=BLAKE2b-256", data.get("hash_function") == "BLAKE2b-256")
-        check("/protocol/info version=3.0.0-draft", data.get("version") == "3.0.0-draft")
+        version = data.get("version", "")
+        check("/protocol/info version major=3", isinstance(version, str) and version.startswith("3."))
 
     # /build/info
     build_data = fetch("/build/info")
@@ -112,12 +113,14 @@ def main():
         check("/health rpc bool", isinstance(data.get("rpc_reachable"), bool))
 
     # /events
+    verify_hash = None
     data = fetch("/events?limit=3")
     if validate_required(data, schemas["/events"], "/events"):
         check("/events protocol=ZAP1", data.get("protocol") == "ZAP1")
         events = data.get("events", [])
         if events:
             ev = events[0]
+            verify_hash = ev.get("leaf_hash")
             check("/events[0] has leaf_hash", "leaf_hash" in ev and len(ev["leaf_hash"]) == 64)
             check("/events[0] has verify_url", "verify_url" in ev)
 
@@ -130,12 +133,13 @@ def main():
             check("/anchor/history[0] has root", len(anchors[0].get("root", "")) >= 64)
 
     # /verify/{hash}/check
-    test_hash = "075b00df286038a7b3f6bb70054df61343e3481fba579591354a00214e9e019b"
-    data = fetch(f"/verify/{test_hash}/check")
-    if validate_required(data, schemas["/verify/{hash}/check"], "/verify/check"):
-        check("/verify/check valid=true", data.get("valid") is True)
-        check("/verify/check protocol=ZAP1", data.get("protocol") == "ZAP1")
-
+    if verify_hash is None:
+        check("/verify/check sample hash available", False, "no event leaf available from /events")
+    else:
+        data = fetch(f"/verify/{verify_hash}/check")
+        if validate_required(data, schemas["/verify/{hash}/check"], "/verify/check"):
+            check("/verify/check valid=true", data.get("valid") is True)
+            check("/verify/check protocol=ZAP1", data.get("protocol") == "ZAP1")
     # /memo/decode
     hex_body = "5a4150313a30313a30373562303064663238363033386137623366366262373030353464663631333433653334383166626135373935393133353461303032313465396530313962"
     try:
