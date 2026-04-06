@@ -27,6 +27,7 @@ pub struct Config {
     pub anchor_threshold: u32,
     pub anchor_interval_hours: u64,
     pub anchor_webhook_url: Option<String>,
+    pub anchor_seed: Option<String>,
 }
 
 impl Config {
@@ -55,6 +56,7 @@ impl Config {
             anchor_threshold: 10,
             anchor_interval_hours: 24,
             anchor_webhook_url: None,
+            anchor_seed: None,
         }
     }
 
@@ -107,6 +109,7 @@ impl Config {
             .parse()
             .unwrap_or(10);
         let anchor_webhook_url = std::env::var("ANCHOR_WEBHOOK_URL").ok();
+        let anchor_seed = std::env::var("ANCHOR_SEED").ok();
 
         let anchor_interval_hours: u64 = std::env::var("ANCHOR_INTERVAL_HOURS")
             .unwrap_or_else(|_| "24".to_string())
@@ -137,6 +140,7 @@ impl Config {
             anchor_threshold,
             anchor_interval_hours,
             anchor_webhook_url,
+            anchor_seed,
         })
     }
 }
