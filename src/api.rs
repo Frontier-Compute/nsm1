@@ -1030,7 +1030,7 @@ async fn protocol_info() -> Json<serde_json::Value> {
     Json(serde_json::json!({
         "protocol": "ZAP1",
         "version": PROTOCOL_VERSION,
-        "event_types": 18,
+        "event_types": 9,
         "deployed_types": 15,
         "reserved_types": 3,
         "hash_function": "BLAKE2b-256",
@@ -1681,16 +1681,8 @@ async fn stats(
         (7, "TRANSFER"),
         (8, "EXIT"),
         (9, "MERKLE_ROOT"),
-        (10, "STAKING_DEPOSIT"),
-        (11, "STAKING_WITHDRAW"),
-        (12, "STAKING_REWARD"),
-        (13, "GOVERNANCE_PROPOSAL"),
-        (14, "GOVERNANCE_VOTE"),
-        (15, "GOVERNANCE_RESULT"),
-        (64, "AGENT_REGISTER"),
-        (65, "AGENT_POLICY"),
-        (66, "AGENT_ACTION"),
     ];
+
     let db_counts = state.db.leaf_counts_by_type().unwrap_or_default();
     let mut type_counts = serde_json::Map::new();
     for (id, name) in &type_names {
