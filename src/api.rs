@@ -8,21 +8,49 @@ use axum::{
 use tower_http::cors::CorsLayer;
 
 fn check_api_key(config: &Config, headers: &HeaderMap) -> Result<(), (StatusCode, String)> {
+    check_api_key_with_db(config, headers, None)
+}
+
+fn check_api_key_with_db(
+    config: &Config,
+    headers: &HeaderMap,
+    db: Option<&crate::db::Db>,
+) -> Result<(), (StatusCode, String)> {
     if let Some(expected) = &config.api_key {
         let provided = headers
             .get("authorization")
             .and_then(|v| v.to_str().ok())
             .and_then(|v| v.strip_prefix("Bearer "));
         match provided {
-            Some(key) if key == expected => Ok(()),
+            Some(key) if key == expected => return Ok(()),
+            Some(key) => {
+                if let Some(db) = db {
+                    let hash = sha256_hex(key);
+                    if db.check_api_key_db(&hash).unwrap_or(false) {
+                        let _ = db.increment_api_key_usage(&hash);
+                        return Ok(());
+                    }
+                }
+                Err((
+                    StatusCode::UNAUTHORIZED,
+                    "Invalid or missing API key".to_string(),
+                ))
+            }
             _ => Err((
                 StatusCode::UNAUTHORIZED,
                 "Invalid or missing API key".to_string(),
             )),
         }
     } else {
-        Ok(()) // No API key configured = no auth required (dev mode)
+        Ok(())
     }
+}
+
+fn sha256_hex(input: &str) -> String {
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    hasher.update(input.as_bytes());
+    format!("{:x}", hasher.finalize())
 }
 
 fn generate_qr_svg(data: &str) -> String {
@@ -100,6 +128,7 @@ pub fn router(state: AppState) -> Router {
         .route("/webhooks/{id}", delete(delete_webhook))
         .route("/admin/anchor/qr", get(admin_anchor_qr))
         .route("/admin/anchor/record", post(admin_anchor_record))
+        .route("/trial-key", post(create_trial_key))
         .layer(
             CorsLayer::new()
                 .allow_origin([
@@ -1184,6 +1213,41 @@ async fn badge_anchor(
 }
 
 /// Build provenance: version, dependencies, reproducibility metadata.
+
+async fn create_trial_key(
+    State(state): State<AppState>,
+) -> Result<(StatusCode, Json<serde_json::Value>), (StatusCode, String)> {
+    state
+        .db
+        .create_api_keys_table()
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    let raw_key = format!(
+        "zap1_trial_{}",
+        uuid::Uuid::new_v4().to_string().replace('-', "")
+    );
+    let key_hash = sha256_hex(&raw_key);
+    let id = uuid::Uuid::new_v4().to_string();
+    let expires = (chrono::Utc::now() + chrono::Duration::days(30)).to_rfc3339();
+
+    state
+        .db
+        .insert_api_key(&id, &key_hash, "trial", 5, Some(&expires))
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    tracing::info!("Trial key issued: {}", &raw_key[..20]);
+
+    Ok((
+        StatusCode::CREATED,
+        Json(serde_json::json!({
+            "key": raw_key,
+            "tier": "trial",
+            "quota": 5,
+            "expires_in_days": 30,
+        })),
+    ))
+}
+
 async fn build_info() -> Json<serde_json::Value> {
     let build_info = std::fs::read_to_string("/usr/local/share/zap1/BUILD_INFO")
         .unwrap_or_else(|_| "not available (dev build)".to_string());
@@ -1303,7 +1367,7 @@ async fn create_lifecycle_event(
     headers: HeaderMap,
     Json(req): Json<CreateEventRequest>,
 ) -> Result<(StatusCode, Json<serde_json::Value>), (StatusCode, String)> {
-    check_api_key(&state.config, &headers)?;
+    check_api_key_with_db(&state.config, &headers, Some(&state.db))?;
 
     // Validate wallet_hash: 1-128 chars, alphanumeric + underscore + hyphen
     if req.wallet_hash.is_empty() || req.wallet_hash.len() > 128 {

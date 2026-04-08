@@ -61,6 +61,10 @@ impl Db {
             [],
         )?;
 
+        // Migrate: api_keys table for trial key support
+        conn.execute_batch(include_str!("../migrations/003_api_keys.sql"))
+            .context("Failed to create api_keys table")?;
+
         Ok(Db {
             conn: Mutex::new(conn),
         })
@@ -1124,6 +1128,74 @@ impl Db {
         let root = current_root(&conn)?.context("Merkle root missing after leaf insert")?;
 
         Ok((leaf, root))
+    }
+
+    // --- API key management ---
+
+    pub fn create_api_keys_table(&self) -> Result<()> {
+        let conn = self.conn()?;
+        conn.execute_batch(include_str!("../migrations/003_api_keys.sql"))?;
+        Ok(())
+    }
+
+    pub fn insert_api_key(
+        &self,
+        id: &str,
+        key_hash: &str,
+        tier: &str,
+        quota: i64,
+        expires_at: Option<&str>,
+    ) -> Result<()> {
+        let conn = self.conn()?;
+        let now = chrono::Utc::now().to_rfc3339();
+        conn.execute(
+                "INSERT INTO api_keys (id, key_hash, tier, quota, used, created_at, expires_at) VALUES (?1, ?2, ?3, ?4, 0, ?5, ?6)",
+                params![id, key_hash, tier, quota, now, expires_at],
+            )?;
+        Ok(())
+    }
+
+    pub fn check_api_key_db(&self, key_hash: &str) -> Result<bool> {
+        let conn = self.conn()?;
+        // Check table exists first
+        let table_exists: bool = conn.prepare("SELECT 1 FROM api_keys LIMIT 0").is_ok();
+        if !table_exists {
+            return Ok(false);
+        }
+        let mut stmt = conn.prepare(
+            "SELECT id, quota, used, expires_at FROM api_keys WHERE key_hash = ?1 LIMIT 1",
+        )?;
+        let result = stmt.query_row(params![key_hash], |row| {
+            let quota: i64 = row.get(1)?;
+            let used: i64 = row.get(2)?;
+            let expires_at: Option<String> = row.get(3)?;
+            Ok((quota, used, expires_at))
+        });
+        match result {
+            Ok((quota, used, expires_at)) => {
+                // Check expiry
+                if let Some(exp) = expires_at {
+                    if let Ok(exp_dt) = chrono::DateTime::parse_from_rfc3339(&exp) {
+                        if exp_dt < chrono::Utc::now() {
+                            return Ok(false);
+                        }
+                    }
+                }
+                // Check quota (-1 = unlimited)
+                Ok(quota < 0 || used < quota)
+            }
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(false),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    pub fn increment_api_key_usage(&self, key_hash: &str) -> Result<()> {
+        let conn = self.conn()?;
+        conn.execute(
+            "UPDATE api_keys SET used = used + 1 WHERE key_hash = ?1",
+            params![key_hash],
+        )?;
+        Ok(())
     }
 }
 

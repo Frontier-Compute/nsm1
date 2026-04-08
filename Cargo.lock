@@ -3575,6 +3575,7 @@ dependencies = [
  "sapling-crypto",
  "serde",
  "serde_json",
+ "sha2 0.10.9",
  "shardtree",
  "tokio",
  "tokio-stream",
