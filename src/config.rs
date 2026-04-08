@@ -28,6 +28,10 @@ pub struct Config {
     pub anchor_interval_hours: u64,
     pub anchor_webhook_url: Option<String>,
     pub anchor_seed: Option<String>,
+    // FROST threshold signing
+    pub signing_mode: String,
+    pub frost_share_path_2: Option<String>,
+    pub frost_share_path_3: Option<String>,
 }
 
 impl Config {
@@ -57,6 +61,9 @@ impl Config {
             anchor_interval_hours: 24,
             anchor_webhook_url: None,
             anchor_seed: None,
+            signing_mode: "single_key".to_string(),
+            frost_share_path_2: None,
+            frost_share_path_3: None,
         }
     }
 
@@ -116,6 +123,11 @@ impl Config {
             .parse()
             .unwrap_or(24);
 
+        let signing_mode = std::env::var("SIGNING_MODE")
+            .unwrap_or_else(|_| "single_key".to_string());
+        let frost_share_path_2 = std::env::var("FROST_SHARE_PATH_2").ok();
+        let frost_share_path_3 = std::env::var("FROST_SHARE_PATH_3").ok();
+
         Ok(Config {
             ufvk,
             network,
@@ -141,6 +153,9 @@ impl Config {
             anchor_interval_hours,
             anchor_webhook_url,
             anchor_seed,
+            signing_mode,
+            frost_share_path_2,
+            frost_share_path_3,
         })
     }
 }

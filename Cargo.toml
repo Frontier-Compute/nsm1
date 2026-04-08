@@ -87,6 +87,9 @@ zcash_transparent = "0.6.3"
 jubjub = "0.10.0"
 bls12_381 = "0.8.0"
 rand = "0.8"
+reddsa = { version = "0.5", features = ["frost"] }
+frost-rerandomized = "0.6"
+pasta_curves = "0.5"
 
 [dev-dependencies]
 tower = "0.5"

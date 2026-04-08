@@ -3,6 +3,7 @@ pub mod api;
 pub mod config;
 pub mod db;
 pub mod foreman;
+pub mod frost_signer;
 pub mod keys;
 pub mod memo;
 pub mod merkle;

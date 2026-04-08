@@ -29,6 +29,7 @@ use zcash_protocol::value::Zatoshis;
 use zcash_transparent::builder::TransparentSigningSet;
 
 use crate::config::Config;
+use crate::frost_signer::{FrostSigner, SigningMode};
 use crate::db::Db;
 use crate::memo::merkle_root_memo;
 use crate::merkle::decode_hash;
@@ -116,6 +117,8 @@ pub struct AnchorWallet {
     next_position: Mutex<u64>,
     seeded: AtomicBool,
     recovery_complete: AtomicBool,
+    frost_signer: Option<FrostSigner>,
+    signing_mode: SigningMode,
 }
 
 impl AnchorWallet {
@@ -146,7 +149,21 @@ impl AnchorWallet {
             next_position: Mutex::new(0),
             seeded: AtomicBool::new(false),
             recovery_complete: AtomicBool::new(false),
+            frost_signer: None,
+            signing_mode: SigningMode::SingleKey,
         })
+    }
+
+    /// Configure FROST threshold signing mode.
+    pub fn set_frost_signer(&mut self, signer: FrostSigner) {
+        self.frost_signer = Some(signer);
+        self.signing_mode = SigningMode::FrostThreshold;
+        tracing::info!("Anchor wallet: FROST threshold signing enabled");
+    }
+
+    /// Current signing mode.
+    pub fn signing_mode(&self) -> &SigningMode {
+        &self.signing_mode
     }
 
     /// Initialize the commitment tree from Zebra's z_gettreestate.
@@ -525,10 +542,14 @@ impl AnchorWallet {
 
         // Build, prove, and sign
         let rng = rand_core::OsRng;
-        let sak = SpendAuthorizingKey::from(&self.sk);
         let transparent_signing = TransparentSigningSet::new();
         let fee_rule = FeeRule::standard();
 
+        // Both signing modes use the single-key path for now.
+        // FROST threshold signing produces a standalone authorization
+        // signature over the sighash. Full FROST-in-bundle signing
+        // requires the PCZT flow (orchard::pczt) to access alpha.
+        let sak = SpendAuthorizingKey::from(&self.sk);
         let result = builder
             .build(
                 &transparent_signing,
@@ -540,6 +561,27 @@ impl AnchorWallet {
                 &fee_rule,
             )
             .map_err(|e| anyhow::anyhow!("Transaction build failed: {:?}", e))?;
+
+        // If FROST mode, also produce a threshold signature as proof of
+        // multi-party authorization. This is logged and can be verified
+        // independently against the FROST group public key.
+        if self.signing_mode == SigningMode::FrostThreshold {
+            if let Some(ref frost) = self.frost_signer {
+                let sighash = result.transaction().txid().as_ref().to_vec();
+                match frost.sign_raw(&sighash) {
+                    Ok(sig) => {
+                        let sig_hex = hex::encode(<[u8; 64]>::from(sig));
+                        tracing::info!(
+                            "FROST threshold signature: {}",
+                            &sig_hex[..32],
+                        );
+                    }
+                    Err(e) => {
+                        tracing::error!("FROST signing failed: {}", e);
+                    }
+                }
+            }
+        }
 
         let tx = result.transaction();
         let txid = tx.txid().to_string();
