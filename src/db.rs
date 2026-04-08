@@ -1144,13 +1144,13 @@ impl Db {
         key_hash: &str,
         tier: &str,
         quota: i64,
-        expires_at: Option<&str>,
+        _expires_at: Option<&str>,
     ) -> Result<()> {
         let conn = self.conn()?;
         let now = chrono::Utc::now().to_rfc3339();
         conn.execute(
-                "INSERT INTO api_keys (id, key_hash, tier, quota, used, created_at, expires_at) VALUES (?1, ?2, ?3, ?4, 0, ?5, ?6)",
-                params![id, key_hash, tier, quota, now, expires_at],
+                "INSERT INTO api_keys (id, name, key_hash, tier, leaves_limit, leaves_used, created_at) VALUES (?1, ?2, ?3, ?4, ?5, 0, ?6)",
+                params![id, format!("trial-{}", &id[..8.min(id.len())]), key_hash, tier, quota, now],
             )?;
         Ok(())
     }
@@ -1163,27 +1163,15 @@ impl Db {
             return Ok(false);
         }
         let mut stmt = conn.prepare(
-            "SELECT id, quota, used, expires_at FROM api_keys WHERE key_hash = ?1 LIMIT 1",
+            "SELECT id, leaves_limit, leaves_used FROM api_keys WHERE key_hash = ?1 LIMIT 1",
         )?;
         let result = stmt.query_row(params![key_hash], |row| {
-            let quota: i64 = row.get(1)?;
+            let limit: i64 = row.get(1)?;
             let used: i64 = row.get(2)?;
-            let expires_at: Option<String> = row.get(3)?;
-            Ok((quota, used, expires_at))
+            Ok((limit, used))
         });
         match result {
-            Ok((quota, used, expires_at)) => {
-                // Check expiry
-                if let Some(exp) = expires_at {
-                    if let Ok(exp_dt) = chrono::DateTime::parse_from_rfc3339(&exp) {
-                        if exp_dt < chrono::Utc::now() {
-                            return Ok(false);
-                        }
-                    }
-                }
-                // Check quota (-1 = unlimited)
-                Ok(quota < 0 || used < quota)
-            }
+            Ok((limit, used)) => Ok(limit < 0 || used < limit),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(false),
             Err(e) => Err(e.into()),
         }
@@ -1191,9 +1179,10 @@ impl Db {
 
     pub fn increment_api_key_usage(&self, key_hash: &str) -> Result<()> {
         let conn = self.conn()?;
+        let now = chrono::Utc::now().to_rfc3339();
         conn.execute(
-            "UPDATE api_keys SET used = used + 1 WHERE key_hash = ?1",
-            params![key_hash],
+            "UPDATE api_keys SET leaves_used = leaves_used + 1, last_used_at = ?2 WHERE key_hash = ?1",
+            params![key_hash, now],
         )?;
         Ok(())
     }
