@@ -174,10 +174,31 @@ impl AnchorWallet {
     }
 
     /// Configure FROST threshold signing mode.
+    ///
+    /// Verifies that the FROST group verifying key matches the wallet's
+    /// SpendValidatingKey (ak). If they diverge, FROST signing would produce
+    /// invalid spend-auth signatures, so we fall back to single-key mode.
     pub fn set_frost_signer(&mut self, signer: FrostSigner) {
+        // Extract ak (SpendValidatingKey) from the first 32 bytes of the FVK.
+        let fvk_bytes = self.fvk.to_bytes();
+        let ak_bytes: [u8; 32] = fvk_bytes[..32].try_into().expect("ak is 32 bytes");
+
+        // Serialize the FROST group verifying key (same Pallas encoding).
+        let gvk_bytes: [u8; 32] = signer.group_verifying_key().serialize();
+
+        if ak_bytes != gvk_bytes {
+            tracing::error!(
+                "FROST group_verifying_key does not match wallet SpendValidatingKey (ak). \
+                 Falling back to single-key signing. ak={} gvk={}",
+                hex::encode(ak_bytes),
+                hex::encode(gvk_bytes),
+            );
+            return;
+        }
+
         self.frost_signer = Some(signer);
         self.signing_mode = SigningMode::FrostThreshold;
-        tracing::info!("Anchor wallet: FROST threshold signing enabled");
+        tracing::info!("Anchor wallet: FROST threshold signing enabled (group key matches ak)");
     }
 
     /// Current signing mode.
