@@ -57,7 +57,9 @@ fn run() -> Result<()> {
         }
         "verify" => {
             if args.len() < 6 {
-                eprintln!("Usage: shieldvault verify <share2.json> <share3.json> <msg_hex> <sig_hex>");
+                eprintln!(
+                    "Usage: shieldvault verify <share2.json> <share3.json> <msg_hex> <sig_hex>"
+                );
                 process::exit(1);
             }
             cmd_verify(&args[2], &args[3], &args[4], &args[5])
@@ -91,9 +93,8 @@ fn cmd_keygen() -> Result<()> {
 
     let mut rng = rand::rngs::OsRng;
 
-    let (shares, pub_key_pkg) =
-        keys::generate_with_dealer(3, 2, IdentifierList::Default, &mut rng)
-            .map_err(|e| anyhow::anyhow!("dealer keygen failed: {}", e))?;
+    let (shares, pub_key_pkg) = keys::generate_with_dealer(3, 2, IdentifierList::Default, &mut rng)
+        .map_err(|e| anyhow::anyhow!("dealer keygen failed: {}", e))?;
 
     let gvk_bytes: [u8; 32] = <<PallasBlake2b512 as Ciphersuite>::Group as Group>::serialize(
         &pub_key_pkg.group_public().to_element(),
@@ -162,12 +163,7 @@ fn cmd_sign(share2_path: &str, share3_path: &str, msg_hex: &str) -> Result<()> {
 }
 
 /// Verify a signature against the group public key derived from share files.
-fn cmd_verify(
-    share2_path: &str,
-    share3_path: &str,
-    msg_hex: &str,
-    sig_hex: &str,
-) -> Result<()> {
+fn cmd_verify(share2_path: &str, share3_path: &str, msg_hex: &str, sig_hex: &str) -> Result<()> {
     use zap1::frost_signer::FrostSigner;
 
     let msg = hex::decode(msg_hex).map_err(|e| anyhow::anyhow!("bad msg hex: {}", e))?;
