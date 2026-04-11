@@ -38,18 +38,18 @@ Nine event types are tracked in ZAP1:
 | `0x07` | `TRANSFER` | Ownership transferred to a new wallet hash |
 | `0x08` | `EXIT` | Participant exit or hardware release recorded |
 | `0x09` | `MERKLE_ROOT` | Current Merkle root anchored to Zcash |
-| `0x0A` | `STAKING_DEPOSIT` | Validator stake locked |
-| `0x0B` | `STAKING_WITHDRAW` | Validator stake unlocked |
-| `0x0C` | `STAKING_REWARD` | Block reward recorded |
-| `0x0D` | `GOVERNANCE_PROPOSAL` | Governance proposal submitted |
-| `0x0E` | `GOVERNANCE_VOTE` | Vote commitment recorded |
-| `0x0F` | `GOVERNANCE_RESULT` | Tally result anchored |
+| `0x0A` | `STAKING_DEPOSIT` | Validator stake locked (reserved, not yet tracked) |
+| `0x0B` | `STAKING_WITHDRAW` | Validator stake unlocked (reserved) |
+| `0x0C` | `STAKING_REWARD` | Block reward recorded (reserved) |
+| `0x0D` | `GOVERNANCE_PROPOSAL` | Governance proposal submitted (reserved) |
+| `0x0E` | `GOVERNANCE_VOTE` | Vote commitment recorded (reserved) |
+| `0x0F` | `GOVERNANCE_RESULT` | Tally result anchored (reserved) |
 
 All hashes use BLAKE2b-256 with `NordicShield_` personalization. Merkle nodes use `NordicShield_MRK`. Full spec: [ONCHAIN_PROTOCOL.md](ONCHAIN_PROTOCOL.md).
 
 ## Mainnet proof anchor
 
-Anchored on Zcash mainnet block **3,286,631** on March 27, 2026.
+Anchored on Zcash mainnet block **3,301,151**. Live stats: https://api.frontiercompute.cash/stats.
 
 - Anchor txid: `98e1d6a01614c464c237f982d9dc2138c5f8aa08342f67b867a18a4ce998af9a`
 - Root: `024e36515ea30efc15a0a7962dd8f677455938079430b9eab174f46a4328a07a`
@@ -186,3 +186,4 @@ cargo test --release --test memo_merkle_test
 
 MIT
 # updated 2026-03-27T23:30:24Z
+
