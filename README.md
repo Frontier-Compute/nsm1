@@ -4,7 +4,7 @@
 
 Open-source attestation protocol for Zcash. Commits typed lifecycle events to a BLAKE2b Merkle tree and anchors roots on-chain via shielded memos. Any Zcash-native operator can use it.
 
-1 mainnet anchor. 12 leaves. 9 event types tracked. 118 tests. 60 automated checks. MIT licensed. Live stats: https://api.frontiercompute.cash/stats
+2 mainnet anchors. 13 leaves. 9 event types tracked. 118 tests. 60 automated checks. MIT licensed. Live stats: https://api.frontiercompute.cash/stats
 
 [ZIP draft PR #1243](https://github.com/zcash/zips/pull/1243) | [QUICKSTART](QUICKSTART.md) | [crates.io](https://crates.io/crates/zap1-verify) | [zcash-memo-decode](https://crates.io/crates/zcash-memo-decode)
 
@@ -156,8 +156,8 @@ See [conformance/](conformance/) for fixtures, schemas, versioning policy, and c
 
 - **Verification SDK (Rust + WASM):** [Frontier-Compute/zap1-verify](https://github.com/Frontier-Compute/zap1-verify) - 22 tests
 - **JS/TS SDK:** [Frontier-Compute/zap1-js](https://github.com/Frontier-Compute/zap1-js) - 19 tests
-- **Attestation explorer:** [explorer.frontiercompute.cash](https://explorer.frontiercompute.cash)
-- **Lifecycle simulator:** [simulator.frontiercompute.cash](https://simulator.frontiercompute.cash)
+- **Attestation explorer:** [explorer.frontiercompute.io](https://explorer.frontiercompute.io)
+- **Lifecycle simulator:** [simulator.frontiercompute.io](https://simulator.frontiercompute.io)
 - **Browser verifier:** [frontiercompute.cash/verify.html](https://frontiercompute.cash/verify.html)
 - **Universal memo decoder:** [zcash-memo-decode](https://crates.io/crates/zcash-memo-decode) - 23 tests, zero deps
 - **Browser memo decoder:** [frontiercompute.cash/memo.html](https://frontiercompute.cash/memo.html)
