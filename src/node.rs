@@ -67,7 +67,8 @@ impl ZebraRpcBackend {
         if bytes.len() > 10 * 1024 * 1024 {
             anyhow::bail!("RPC response too large: {} bytes", bytes.len());
         }
-        let json: serde_json::Value = serde_json::from_slice(&bytes).context("RPC response parse failed")?;
+        let json: serde_json::Value =
+            serde_json::from_slice(&bytes).context("RPC response parse failed")?;
 
         if let Some(error) = json.get("error") {
             if !error.is_null() {
