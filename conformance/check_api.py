@@ -12,7 +12,7 @@ import urllib.error
 import urllib.request
 
 DIR = os.path.dirname(os.path.abspath(__file__))
-BASE = sys.argv[1] if len(sys.argv) > 1 else "https://pay.frontiercompute.io"
+BASE = sys.argv[1] if len(sys.argv) > 1 else "https://api.frontiercompute.cash"
 
 passed = 0
 failed = 0
