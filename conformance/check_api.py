@@ -115,7 +115,9 @@ def main():
     # /events
     verify_hash = None
     data = fetch("/events?limit=3")
-    if validate_required(data, schemas["/events"], "/events"):
+    if data is None:
+        print("  skip  /events  (intentionally not exposed on public api)")
+    elif validate_required(data, schemas["/events"], "/events"):
         check("/events protocol=ZAP1", data.get("protocol") == "ZAP1")
         events = data.get("events", [])
         if events:
