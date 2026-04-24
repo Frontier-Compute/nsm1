@@ -5,7 +5,7 @@ import urllib.error
 import urllib.request
 
 
-BASE = "https://pay.frontiercompute.io"
+BASE = "https://api.frontiercompute.cash"
 
 
 def fetch(path: str):
