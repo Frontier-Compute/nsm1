@@ -8,6 +8,8 @@ on:
 jobs:
   prove-liveness:
     runs-on: ubuntu-latest
+    env:
+      ZAP1_API_BASE: https://api.frontiercompute.cash
     steps:
       - name: Check out repo
         uses: actions/checkout@v5

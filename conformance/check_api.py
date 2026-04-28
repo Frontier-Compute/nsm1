@@ -12,7 +12,11 @@ import urllib.error
 import urllib.request
 
 DIR = os.path.dirname(os.path.abspath(__file__))
-BASE = sys.argv[1] if len(sys.argv) > 1 else "https://api.frontiercompute.cash"
+BASE = (
+    sys.argv[1]
+    if len(sys.argv) > 1
+    else os.environ.get("ZAP1_API_BASE", "https://api.frontiercompute.cash")
+).rstrip("/")
 
 passed = 0
 failed = 0
@@ -116,7 +120,7 @@ def main():
     verify_hash = None
     data = fetch("/events?limit=3")
     if data is None:
-        print("  skip  /events  (intentionally not exposed on public api)")
+        print("  skip  /events  (not available from this API surface)")
     elif validate_required(data, schemas["/events"], "/events"):
         check("/events protocol=ZAP1", data.get("protocol") == "ZAP1")
         events = data.get("events", [])

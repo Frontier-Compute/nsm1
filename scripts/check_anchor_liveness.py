@@ -1,18 +1,26 @@
 #!/usr/bin/env python3
 import json
+import os
 import sys
 import urllib.error
 import urllib.request
 
 
-BASE = "https://api.frontiercompute.cash"
+BASE = os.environ.get("ZAP1_API_BASE", "https://api.frontiercompute.cash").rstrip("/")
+MAX_ANCHOR_AGE_HOURS = int(os.environ.get("ZAP1_MAX_ANCHOR_AGE_HOURS", "72"))
 
 
 def fetch(path: str):
     try:
         with urllib.request.urlopen(f"{BASE}{path}", timeout=20) as resp:
-            return json.load(resp)
-    except (urllib.error.URLError, TimeoutError) as exc:
+            try:
+                return json.load(resp)
+            except json.JSONDecodeError as exc:
+                content_type = resp.headers.get("Content-Type", "")
+                raise RuntimeError(
+                    f"fetch failed for {path}: expected JSON, got {content_type or 'unknown content type'}"
+                ) from exc
+    except (urllib.error.URLError, TimeoutError, RuntimeError) as exc:
         raise RuntimeError(f"fetch failed for {path}: {exc}") from exc
 
 
@@ -27,6 +35,7 @@ def main():
         sys.exit(1)
 
     errors = []
+    warnings = []
 
     if protocol.get("protocol") != "ZAP1":
         errors.append(f"protocol/info returned protocol={protocol.get('protocol')!r}")
@@ -46,8 +55,12 @@ def main():
     if anchors:
         if last_age is None or last_age < 0:
             errors.append(f"invalid last_anchor_age_hours={last_age}")
-        elif last_age > 72:
-            errors.append(f"last anchor is stale: {last_age}h old")
+        elif last_age > MAX_ANCHOR_AGE_HOURS:
+            message = f"last anchor age {last_age}h exceeds threshold {MAX_ANCHOR_AGE_HOURS}h"
+            if status.get("needs_anchor") or status.get("unanchored_leaves", 0) > 0:
+                errors.append(message)
+            else:
+                warnings.append(message)
 
     confirmed = [a for a in anchors if a.get("height") is not None]
     if confirmed:
@@ -72,6 +85,8 @@ def main():
         "last_anchor_age_hours": last_age,
         "last_anchor_block": stats.get("last_anchor_block"),
         "needs_anchor": status.get("needs_anchor"),
+        "unanchored_leaves": status.get("unanchored_leaves"),
+        "warnings": warnings,
         "errors": errors,
     }
 
