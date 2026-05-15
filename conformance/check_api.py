@@ -33,7 +33,7 @@ def check(label, ok, detail=""):
         failed += 1
 
 
-API_KEY = "Blqr7I45XS-VHJDTDa_v7WBgWgqlpIYlQj4asaP-Y-g"
+API_KEY = os.environ.get("ZAP1_ADMIN_API_KEY", "")
 
 
 def fetch(path, headers=None):
@@ -124,9 +124,7 @@ def main():
     # /events
     verify_hash = None
     data = fetch("/events?limit=3")
-    if data is None:
-        print("  skip  /events  (not available from this API surface)")
-    elif validate_required(data, schemas["/events"], "/events"):
+    if validate_required(data, schemas["/events"], "/events"):
         check("/events protocol=ZAP1", data.get("protocol") == "ZAP1")
         events = data.get("events", [])
         if events:
@@ -173,18 +171,21 @@ def main():
     status, body, ctype = fetch_raw("/admin/anchor/qr")
     check("/admin/anchor/qr rejects without auth", status == 401)
 
-    status, body, ctype = fetch_raw(
-        "/admin/anchor/qr",
-        headers={"Authorization": f"Bearer {API_KEY}"},
-    )
-    if has_anchors:
-        check("/admin/anchor/qr returns 200 with auth", status == 200)
-        check("/admin/anchor/qr content-type is HTML", "text/html" in ctype)
-        check("/admin/anchor/qr body contains HTML", "<html" in body.lower())
+    if API_KEY:
+        status, body, ctype = fetch_raw(
+            "/admin/anchor/qr",
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+        if has_anchors:
+            check("/admin/anchor/qr returns 200 with auth", status == 200)
+            check("/admin/anchor/qr content-type is HTML", "text/html" in ctype)
+            check("/admin/anchor/qr body contains HTML", "<html" in body.lower())
+        else:
+            check("/admin/anchor/qr accepted auth", status in (200, 400))
+            if status == 400:
+                print("  skip  /admin/anchor/qr HTML checks  (no anchors yet)")
     else:
-        check("/admin/anchor/qr accepted auth", status in (200, 400))
-        if status == 400:
-            print("  skip  /admin/anchor/qr HTML checks  (no anchors yet)")
+        print("  skip  /admin/anchor/qr authenticated checks  (ZAP1_ADMIN_API_KEY not set)")
 
     # /admin/anchor/record (POST-only, requires auth)
     status, _, _ = fetch_raw("/admin/anchor/record")
